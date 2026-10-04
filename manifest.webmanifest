@@ -1,0 +1,17 @@
+{
+  "name": "WEEKLINE 주간 플래너",
+  "short_name": "WEEKLINE",
+  "description": "목표에서 오늘까지 한 줄로 잇는 주간 플래너",
+  "lang": "ko",
+  "start_url": "./#goals",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F5F3EC",
+  "theme_color": "#1E5B47",
+  "icons": [
+    {"src": "icon-192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "icon-512.png", "sizes": "512x512", "type": "image/png"},
+    {"src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ]
+}
