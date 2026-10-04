@@ -12,6 +12,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
+<script id="wl-lang-redirect">try{if(!localStorage.getItem('wl-lang')&&!/^ko/i.test(navigator.language||''))location.replace('en/'+location.hash);}catch(e){}</script>
 <title>WEEKLINE</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600;700&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap">
@@ -211,7 +212,8 @@ var S={db:null,ready:false,weeks:{},days:{},goals:{},stats:{},retros:{},meta:{},
       meeting:{title:'',query:'',place:null,travel:20,dur:60,day:null,base:null,pick:null},retro:{},report:{},cal:{mode:'month',date:''},edit:null}};
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function hm(x){x=Math.round(x);var h=Math.floor(x/60),m=x%60;return (h<10?'0':'')+h+':'+(m<10?'0':'')+m;}
-function kstNow(){return new Date(Date.now()+9*3600e3);}
+/* device-local wall clock kept in UTC fields (name kept from the KST-only version) */
+function kstNow(){return new Date(Date.now()-new Date().getTimezoneOffset()*6e4);}
 function ymd(d){return d.getUTCFullYear()+'-'+String(d.getUTCMonth()+1).padStart(2,'0')+'-'+String(d.getUTCDate()).padStart(2,'0');}
 function parseYmd(s){var p=s.split('-');return new Date(Date.UTC(+p[0],+p[1]-1,+p[2]));}
 function addDays(d,n){return new Date(d.getTime()+n*864e5);}
@@ -372,7 +374,7 @@ function vToday(){
   var dn=real.filter(function(b){return b.done;}).length,p=pct(dn,real.length),ar=dayAreas(day),ex=exMinutes(day);
   var next=real.find(function(b){return !b.done;});
   h+='<section class="card"><div class="row" style="gap:18px"><div class="ring" style="width:92px;height:92px;background:conic-gradient(var(--accent) '+(p*3.6)+'deg,var(--grid) 0deg)"><div style="width:72px;height:72px"><b class="num" style="font-size:22px">'+p+'<span style="font-size:12px">%</span></b><span class="xs muted">하루 진행</span></div></div>'+
-    '<div style="display:flex;flex-direction:column;gap:3px"><strong class="num">'+dn+' / '+real.length+' 블록 완료</strong><span class="small muted num">운동 '+ex+'분 / 120분</span><span class="small muted">다음 · '+(next?hm(next.s)+' '+esc(next.title):'오늘 블록 모두 완료')+'</span></div></div>'+
+    '<div style="display:flex;flex-direction:column;gap:3px"><strong class="num">'+dn+' / '+real.length+' 블록 완료</strong><span class="small muted num">운동 '+ex+'분 / '+EXG+'분</span><span class="small muted">다음 · '+(next?hm(next.s)+' '+esc(next.title):'오늘 블록 모두 완료')+'</span></div></div>'+
     '</section>';
   var radarCard='<section class="card"><div class="between"><span class="label">오늘의 6영역 균형</span><span class="xs muted">바깥 선 = 계획 100%</span></div>'+
     radar(ar.map(function(a){return a.name;}),ar.map(function(a){return a.pct;}),null,'%','오늘의 6영역 균형: '+ar.map(function(a){return a.name+' '+a.pct+'%';}).join(', '))+'</section>';
@@ -403,7 +405,7 @@ function vReview(){
   /* heatmap: last 4 weeks exercise */
   var rows='',any=false;for(var wk=3;wk>=0;wk--){var mon=addDays(cw.monday,-7*wk),cells='';for(var i=0;i<7;i++){var s=ymd(addDays(mon,i)),dd=S.days[s],m=exMinutes(dd);if(dd)any=true;var lv=m>=EXG?'var(--accent)':(m>=EXG/2?'var(--accent-mid)':'var(--grid)');cells+='<i style="background:'+lv+'" title="'+s+' 운동 '+m+'분"></i>';}rows+='<div class="heat"><span class="xs muted">W'+isoWeek(mon).week+'</span>'+cells+'</div>';}
   h+='<section class="card"><span class="label">운동 1시간 달성 · 최근 4주</span><div class="heat"><span></span>'+DAYN.map(function(x){return '<span class="xs muted" style="text-align:center">'+x+'</span>';}).join('')+'</div>'+rows+
-    '<div class="legend xs muted"><span><i style="width:12px;height:12px;border-radius:3px;background:var(--grid)"></i>없음</span><span><i style="width:12px;height:12px;border-radius:3px;background:var(--accent-mid)"></i>1시간</span><span><i style="width:12px;height:12px;border-radius:3px;background:var(--accent)"></i>2시간</span></div>'+(any?'':'<span class="xs muted">일정 기록이 쌓이면 칸이 채워집니다.</span>')+'</section>';
+    '<div class="legend xs muted"><span><i style="width:12px;height:12px;border-radius:3px;background:var(--grid)"></i>없음</span><span><i style="width:12px;height:12px;border-radius:3px;background:var(--accent-mid)"></i>30분</span><span><i style="width:12px;height:12px;border-radius:3px;background:var(--accent)"></i>1시간</span></div>'+(any?'':'<span class="xs muted">일정 기록이 쌓이면 칸이 채워집니다.</span>')+'</section>';
   var tw=ws.slice(-6);
   h+='<section class="card"><span class="label">주간 달성률 추이</span>'+(tw.length?'<div class="trend" style="grid-template-columns:repeat('+tw.length+',minmax(0,1fr))">'+tw.map(function(w,i){var p=weekStats(w).pct;return '<div><span class="xs num" style="font-weight:600">'+p+'%</span><i style="height:'+Math.max(4,Math.round(p*.85))+'px;background:'+(i===tw.length-1?'var(--accent)':'var(--accent-mid)')+'"></i><span class="xs muted">'+esc(w._id.split('-')[1])+'</span></div>';}).join('')+'</div>':emptyBox('주간 계획이 쌓이면 추이가 표시됩니다.'))+'</section>';
   return h;
@@ -852,6 +854,7 @@ var CITIES=[
  ['하노이','베트남',-2],['호찌민','베트남',-2],['방콕','태국',-2],['자카르타','인도네시아',-2],['두바이','UAE',-5],['프랑크푸르트','독일',-7],['파리','프랑스',-7],['런던','영국',-8],
  ['뉴욕','미국',-13],['샌프란시스코','미국',-16],['LA','미국',-16],['시드니','호주',2]
 ];
+var HOME_OFF=-new Date().getTimezoneOffset()/60;CITIES.forEach(function(c){c[2]=c[2]+9-HOME_OFF;});
 var CHECK_OVERSEAS=['여권 유효기간 6개월 이상 확인','비자·전자여행허가(ESTA·ETA 등) 확인','항공권 예약','숙소 예약','여행자 보험 가입','환전·해외결제 카드 확인','로밍 또는 eSIM 준비','상비약·복용약 + 영문 처방전 (진통소염제 자제)','미팅 자료·명함·선물 준비','현지 일정·주소·연락처 정리','회사 업무 위임·부재 공지','출국 전날 짐 최종 점검'];
 var CHECK_DOMESTIC=['교통편 예약 (KTX·항공·차량)','숙박 필요 여부 결정·예약','미팅 자료·명함 준비','현지 이동 동선·주차 확인','복용약·물 챙기기'];
 function tripOn(ds){return Object.values(S.trips||{}).filter(function(t){return t.start<=ds&&ds<=t.end;});}
@@ -1133,7 +1136,7 @@ function backupCard(){
   return '<section class="card" style="gap:10px"><span class="label">이 기기의 기록</span>'+
     '<p class="small muted" style="margin:0">기록은 서버가 아닌 이 기기의 브라우저에만 저장됩니다. 기기를 바꾸거나 브라우저 데이터를 지우기 전에 백업 파일을 받아 두세요.</p>'+
     '<div class="grid2"><button class="btn" data-act="wlbackup">백업 파일 받기</button><button class="btn" data-act="wlrestore">백업에서 복원</button></div>'+
-    notifRow()+'<a class="xs muted" href="privacy.html">개인정보 처리방침</a></section>';
+    notifRow()+'<div class="row" style="gap:16px"><a class="xs muted" href="privacy.html">개인정보 처리방침</a><a class="xs muted" href="en/" data-lang="en" lang="en">English</a></div></section>';
 }
 VIEWS.goals=(function(f){return function(){return f()+backupCard();};})(VIEWS.goals);
 function wlBackup(){
@@ -1169,13 +1172,15 @@ function wlTick(){
   if(ch)save('alerts/'+d,{items:doc.items});
 }
 document.addEventListener('click',function(e){
+  var lg=e.target.closest&&e.target.closest('[data-lang]');if(lg){try{localStorage.setItem('wl-lang',lg.getAttribute('data-lang'));}catch(x){}return;}
   var b=e.target.closest&&e.target.closest('[data-act^="wl"]');if(!b)return;var a=b.getAttribute('data-act');
   if(a==='wlbackup')wlBackup();
   else if(a==='wlrestore')wlRestore();
   else if(a==='wlnotif'&&'Notification' in window){Notification.requestPermission().then(function(p){toast(p==='granted'?'미팅 알림을 켰습니다':'알림이 허용되지 않았습니다');render();});}
 });
+var WL_SW='sw.js';
 setInterval(wlTick,30000);setTimeout(wlTick,3000);
-if('serviceWorker' in navigator&&location.protocol==='https:'){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js');});}
+if('serviceWorker' in navigator&&location.protocol==='https:'){window.addEventListener('load',function(){navigator.serviceWorker.register(WL_SW);});}
 
 S.ui.meeting=freshMeeting();applyZoom();render();connect();
 })();
