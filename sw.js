@@ -1,5 +1,5 @@
 /* WEEKLINE offline cache. Bump VERSION on every release so phones pick up the new build. */
-const VERSION = 'weekline-2026-10-04-2';
+const VERSION = 'weekline-2026-10-05-1';
 const SHELL = ['./', 'index.html', 'privacy.html', 'manifest.webmanifest', 'en/', 'en/privacy.html', 'en/manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png', 'apple-touch-icon.png'];
 
 self.addEventListener('install', e => {
@@ -16,6 +16,8 @@ self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
+  // videos stream with range requests; let the browser fetch them directly and never cache them
+  if (req.headers.has('range') || /\.(mp4|webm)$/i.test(url.pathname)) return;
   // pages: network first so updates arrive, cache when offline
   if (req.mode === 'navigate') {
     // cache each page under its own URL so the Korean and English pages never overwrite each other
