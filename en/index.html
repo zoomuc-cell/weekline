@@ -149,6 +149,12 @@ h2{margin:0;font-family:var(--f-display);font-size:17px;font-weight:700}
 .mbars>div{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px;height:120px;font-size:10px}
 .mbars i{display:block;width:100%;max-width:40px;border-radius:4px 4px 2px 2px}
 @media (prefers-reduced-motion:no-preference){.bar>i,.vbar>i{transition:width .3s,height .3s}}
+.qnav{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.qnav button{display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px 4px 10px;border:1px solid var(--line);border-radius:16px;background:var(--card);color:var(--ink);text-align:center;min-height:96px}
+.qnav button:active{transform:scale(.97)}
+.qnav .qi{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:var(--accent-soft);color:var(--accent)}
+.qnav b{font-size:13px;font-weight:600;line-height:1.25;word-break:keep-all}
+.qnav .xs{font-size:11px;line-height:1.3;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 </style>
 
 <div class="app" id="app" aria-live="polite"></div>
@@ -201,6 +207,9 @@ var ICONS={
  cascade:'<path d="M12 3v6M12 9l-6 5M12 9l6 5M6 14v5M18 14v5M12 9v10"/>',
  meeting:'<path d="M12 5v14M5 12h14"/>',
  goals:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2"/>',
+ memo:'<path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4M9 11h7M9 15h7M9 19h4"/>',
+ trip:'<path d="M3 15l18-7-6 13-3-6z"/><path d="M12 15l3-3"/>',
+ report:'<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/>',
  calendar:'<rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4M8 14h2M12 14h2M16 14h0M8 17h2M12 17h2"/>'
 };
 var TABS=[['goals','Goals'],['today','Today'],['meeting','Meeting'],['calendar','Schedule'],['week','This week']];
@@ -259,7 +268,7 @@ function dayTemplate(dateStr){
 
 /* ---------- db ---------- */
 var EXG=60;
-var COLS=['weeks','days','goals','stats','retros','meta','alerts','trips'];
+var COLS=['weeks','days','goals','stats','retros','meta','alerts','trips','memos'];
 function save(path,data,merge){
   if(!S.db){toast('Not connected to storage, so nothing was saved');return Promise.resolve(false);}
   var ref=S.db.doc(path);
@@ -327,6 +336,42 @@ function radar(names,vals,prev,unit,aria){
     '</svg>'+dots+lbl+'</div>';
 }
 function weakest(names,vals){var k=0;vals.forEach(function(v,i){if(v<vals[k])k=i;});return names[k];}
+
+/* ---------- memos & home shortcuts ---------- */
+function memoId(kind){return kind==='week'?'w-'+curWeek().id:'d-'+todayStr();}
+function memoDoc(kind){return (S.memos||{})[memoId(kind)]||null;}
+function memoCard(kind){
+  var wk=kind==='week',m=memoDoc(kind);
+  return '<section class="card" style="gap:8px"><div class="between"><span class="label">'+(wk?'This week’s memo':'Today’s memo')+'</span><span class="xs muted">'+(m&&m.updated?'Saved · '+esc(m.updated):'Saves as you type')+'</span></div>'+
+    '<textarea id="memo-'+kind+'" class="field" rows="'+(wk?5:4)+'" data-memo="'+memoId(kind)+'" aria-label="'+(wk?'This week’s memo':'Today’s memo')+'" placeholder="'+(wk?'Things to remember this week · ideas · meeting notes':'Thoughts, call notes, to-dos for today')+'" style="resize:vertical;line-height:1.6;min-height:'+(wk?132:108)+'px">'+esc(m&&m.text||'')+'</textarea></section>';
+}
+function nextMeetingLabel(){
+  var t=todayStr(),n=kstNow(),now=n.getUTCHours()*60+n.getUTCMinutes();
+  for(var i=0;i<8;i++){var ds=ymd(addDays(parseYmd(t),i)),d=S.days[ds];if(!d)continue;
+    var ms=(d.blocks||[]).filter(function(b){return b.meeting&&(i>0||b.s>=now);}).sort(function(a,b){return a.s-b.s;});
+    if(ms.length)return (i===0?'Today ':md(parseYmd(ds))+' ')+hm(ms[0].s);}
+  return '';
+}
+function quickNav(){
+  var t=todayStr(),day=S.days[t],real=day?(day.blocks||[]).filter(function(b){return b.area!=='move'&&!b.moved;}):[];
+  var dn=real.filter(function(b){return b.done;}).length,gN=Object.keys(S.goals||{}).length,nm=nextMeetingLabel();
+  var up=Object.values(S.trips||{}).filter(function(x){return (x.end||x.start||'')>=t;}).length;
+  var cw=curWeek(),w=weekDoc(cw.id),st=w?weekStats(w):null,mw=memoDoc('week'),md2=memoDoc('day');
+  var items=[
+    ['cascade','cascade','Set goals',gN?'Target '+gN+'':'Create first goal',''],
+    ['today','today','Today',day?dn+'/'+real.length+' done':'Start from template',''],
+    ['meeting','meeting','Meetings',nm?'Next: '+nm:'Find free time',''],
+    ['trips','trip','Trips',up?'Upcoming '+up+'':'Out of town · abroad',''],
+    ['week','memo','Weekly memo',mw&&mw.text?'In progress':'Empty','memo-week'],
+    ['today','memo','Daily memo',md2&&md2.text?'In progress':'Empty','memo-day'],
+    ['report','report','Weekly report',st?st.pct+'% done':'W'+cw.week,''],
+    ['calendar','calendar','Schedule','Day · week · month · year','']
+  ];
+  return '<nav class="qnav" aria-label="Shortcuts">'+items.map(function(x){
+    return '<button type="button" data-go="'+x[0]+'"'+(x[4]?' data-focus="'+x[4]+'"':'')+'><span class="qi"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+ICONS[x[1]]+'</svg></span><b>'+x[2]+'</b><span class="xs muted">'+esc(x[3])+'</span></button>';
+  }).join('')+'</nav>';
+}
+function applyFocus(){if(!S.ui.focus)return;var el=document.getElementById(S.ui.focus);S.ui.focus=null;if(el){el.scrollIntoView({block:'center'});try{el.focus({preventScroll:true});}catch(e){}}}
 
 /* ---------- views ---------- */
 function header(title,sub,chip,back){
@@ -552,7 +597,7 @@ function vGoals(){
   var f=S.ui.gfilter||'all';
   var now=kstNow(),y=now.getUTCFullYear(),q=Math.floor(now.getUTCMonth()/3)+1;
   var yEl=gPeriod({level:'year'}).el,qEl=gPeriod({level:'quarter'}).el;
-  var h=header(SN[sc]+' goals','What you must achieve this year and this quarter',y+' · Q'+q);
+  var h=header(SN[sc]+' goals','What you must achieve this year and this quarter',y+' · Q'+q)+quickNav();
   var cntOf=function(k){return all.filter(function(g){var z=gScopeOf(g);return z===k||z==='both';}).length;};
   h+='<div class="seg" role="group" aria-label="Goal track" style="grid-template-columns:repeat(2,minmax(0,1fr))">'+['me','org'].map(function(k){return '<button type="button" data-act="gscope" data-v="'+k+'" aria-pressed="'+(sc===k)+'" style="min-height:48px;font-size:15px">'+esc(SN[k])+' goals <span class="num" style="opacity:.75">'+cntOf(k)+'</span></button>';}).join('')+'</div>';
   if(S.ui.grename)h+='<section class="card" style="gap:8px"><span class="label">Rename goal tracks · e.g. Team, Group, Family</span><div class="grid2"><input id="gsn-me" class="field" value="'+esc(SN.me)+'" aria-label="First track name" maxlength="8"><input id="gsn-org" class="field" value="'+esc(SN.org)+'" aria-label="Second track name" maxlength="8"></div><div class="row" style="gap:8px"><button class="btn" data-act="grename" data-v="0" style="flex:1">Cancel</button><button class="btn primary" data-act="gsavenames" style="flex:2;min-height:48px;font-size:15px">Save</button></div></section>';
@@ -1010,6 +1055,8 @@ function repeatDates(ds,rep,count){var out=[ds];if(!rep||rep==='none')return out
 
 var VIEWS={goals:vGoals,trips:vTrips,calendar:vCalendar,week:vWeek,today:vToday,review:vReview,cascade:vCascade,report:vReport,retro:vRetro,meeting:vMeeting};
 var TAB_OF={report:'week',retro:'week',review:'goals',insights:'goals',cascade:'goals',trips:'calendar'};
+VIEWS.today=(function(f){return function(){return f()+memoCard('day');};})(VIEWS.today);
+VIEWS.week=(function(f){return function(){return f()+memoCard('week');};})(VIEWS.week);
 function route(){var h=(location.hash||'').replace('#','');return VIEWS[h]?h:'goals';}
 function render(){
   if(!S.ui.cal.date)S.ui.cal.date=todayStr();
@@ -1022,7 +1069,7 @@ function render(){
   document.getElementById('tabs').innerHTML=TABS.map(function(t){var fab=t[0]==='meeting';return '<a href="#'+t[0]+'"'+(fab?' class="fab"':'')+(t[0]===tab?' aria-current="page"':'')+(fab?' aria-label="Book a meeting"':'')+'>'+(fab?'<span class="fabi">':'')+'<svg width="'+(fab?26:22)+'" height="'+(fab?26:22)+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="'+(fab?2.4:1.8)+'" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+ICONS[t[0]]+'</svg>'+(fab?'</span>':'')+t[1]+'</a>';}).join('');
   if(fid){var el=document.getElementById(fid);if(el){el.focus();try{if(sel!=null)el.setSelectionRange(sel,sel);}catch(e){}}}
 }
-window.addEventListener('hashchange',function(){render();window.scrollTo(0,0);});
+window.addEventListener('hashchange',function(){render();window.scrollTo(0,0);applyFocus();});
 
 /* ---------- actions ---------- */
 function newWeekDoc(w){return {id:w.id,monday:ymd(w.monday),roles:[['Work','Career · business'],['Health','Exercise · sleep'],['Money','Saving · investing'],['Learning','Reading · study'],['Relationships','Family · friends'],['Rest','Recovery · hobbies']].map(function(x){return {name:x[0],sub:x[1],rocks:[]};}),report:{decisions:{},confirmed:false}};}
@@ -1030,7 +1077,7 @@ function ensureWeek(w){var d=weekDoc(w.id);if(d)return d;d=newWeekDoc(w);S.weeks
 function writeWeek(id){var w=S.weeks[id];save('weeks/'+id,{id:w.id||id,monday:w.monday||'',roles:w.roles,report:w.report||{decisions:{},confirmed:false}});}
 function writeDay(ds){var d=S.days[ds];var o={};Object.keys(d).forEach(function(k){if(k!=='_id')o[k]=d[k];});save('days/'+ds,o);}
 document.addEventListener('click',function(e){
-  var go=e.target.closest('[data-go]');if(go){location.hash=go.getAttribute('data-go');return;}
+  var go=e.target.closest('[data-go]');if(go){S.ui.focus=go.getAttribute('data-focus')||null;var gh=go.getAttribute('data-go');if((location.hash||'').replace('#','')===gh){render();window.scrollTo(0,0);applyFocus();}else location.hash=gh;return;}
   var b=e.target.closest('[data-act]');if(!b||b.disabled)return;var a=b.getAttribute('data-act'),cw=curWeek();
   if(a==='newWeek'){ensureWeek(cw);render();}
   else if(a==='rock'){var w=weekDoc(cw.id),k=w.roles[+b.dataset.r].rocks[+b.dataset.k];k.done=!k.done;writeWeek(cw.id);render();}
@@ -1109,6 +1156,9 @@ document.addEventListener('submit',function(e){var f=e.target.closest('[data-for
 function refreshPlace(){var el=document.getElementById('msugg');if(el)el.innerHTML=placeArea(S.ui.meeting);}
 document.addEventListener('input',function(e){
   var t=e.target;if(t.matches&&t.matches('input[type=text],input:not([type]),input[type=number],textarea'))S.typingUntil=Date.now()+1500;
+  var mid=t.getAttribute&&t.getAttribute('data-memo');
+  if(mid){var nw=kstNow(),stamp=hm(nw.getUTCHours()*60+nw.getUTCMinutes());S.memos=S.memos||{};S.memos[mid]={_id:mid,text:t.value,updated:stamp};
+    clearTimeout(S._memoT);S._memoT=setTimeout(function(){var x=S.memos[mid];save('memos/'+mid,{text:x.text,updated:x.updated,kind:mid.charAt(0)==='w'?'week':'day'});},600);return;}
   if(t.id&&t.id.indexOf('ge-')===0){S.ui.gdraft=S.ui.gdraft||{};S.ui.gdraft[t.id.slice(3)]=t.value;}
   var en=t.getAttribute('data-ein');if(en&&S.ui.edit){S.ui.edit[en]=t.type==='checkbox'?t.checked:t.value;if(S.ui.edit.warn&&(en==='s'||en==='e'||en==='date')){S.ui.edit.warn='';}return;}
   if(t.getAttribute('data-nl')){S.nl.text=t.value;return;}

@@ -1,5 +1,5 @@
 /* WEEKLINE offline cache. Bump VERSION on every release so phones pick up the new build. */
-const VERSION = 'weekline-2026-10-05-1';
+const VERSION = 'weekline-2026-10-05-2';
 const SHELL = ['./', 'index.html', 'privacy.html', 'manifest.webmanifest', 'en/', 'en/privacy.html', 'en/manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png', 'apple-touch-icon.png'];
 
 self.addEventListener('install', e => {
