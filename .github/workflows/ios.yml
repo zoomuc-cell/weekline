@@ -1,0 +1,85 @@
+name: iOS app
+
+on:
+  push:
+    branches: [main]
+    paths: ['ios-app/**', 'index.html', 'en/index.html', 'privacy.html', 'en/privacy.html', '.github/workflows/ios.yml']
+  workflow_dispatch:
+    inputs:
+      testflight:
+        description: 'Upload a signed build to TestFlight (needs the App Store secrets)'
+        type: boolean
+        default: false
+
+jobs:
+  build:
+    runs-on: macos-15
+    defaults:
+      run:
+        working-directory: ios-app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: ios-app/package-lock.json
+      - run: npm ci
+      - name: Build the app's web files from the published PWA
+        run: python3 build_www.py
+      - run: npx cap sync ios
+      - name: Check the native bridge (alerts, backup) in a browser
+        run: npm i -g playwright@1 && playwright install chromium && node qa/test_native.js
+      - name: Compile for the iOS Simulator (no signing)
+        run: |
+          xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Debug \
+            -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build CODE_SIGNING_ALLOWED=NO build | tail -n 40
+          test -d build/Build/Products/Debug-iphonesimulator/App.app
+      - uses: actions/upload-artifact@v4
+        with:
+          name: WEEKLINE-simulator-app
+          path: ios-app/build/Build/Products/Debug-iphonesimulator/App.app
+
+  testflight:
+    if: github.event_name == 'workflow_dispatch' && inputs.testflight
+    needs: build
+    runs-on: macos-15
+    defaults:
+      run:
+        working-directory: ios-app
+    env:
+      TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check the App Store secrets are set
+        run: |
+          for v in TEAM_ID ASC_KEY_ID ASC_ISSUER_ID ASC_KEY_P8; do
+            if [ -z "${!v}" ]; then echo "::error::Secret for $v is missing (see ios-app/README.md)"; exit 1; fi
+          done
+      - run: npm ci && python3 build_www.py && npx cap sync ios
+      - name: Archive and upload (Xcode cloud signing with an App Store Connect API key)
+        run: |
+          echo "$ASC_KEY_P8" > "$RUNNER_TEMP/asc.p8"
+          AUTH="-allowProvisioningUpdates -authenticationKeyPath $RUNNER_TEMP/asc.p8 -authenticationKeyID $ASC_KEY_ID -authenticationKeyIssuerID $ASC_ISSUER_ID"
+          xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release \
+            -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/WEEKLINE.xcarchive" \
+            DEVELOPMENT_TEAM="$TEAM_ID" CURRENT_PROJECT_VERSION="${{ github.run_number }}" $AUTH archive | tail -n 40
+          cat > "$RUNNER_TEMP/export.plist" <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>destination</key><string>upload</string>
+            <key>teamID</key><string>$TEAM_ID</string>
+            <key>signingStyle</key><string>automatic</string>
+          </dict></plist>
+          PLIST
+          xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/WEEKLINE.xcarchive" \
+            -exportOptionsPlist "$RUNNER_TEMP/export.plist" -exportPath "$RUNNER_TEMP/export" $AUTH | tail -n 40

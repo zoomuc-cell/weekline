@@ -1,0 +1,16 @@
+{
+  "appId": "io.github.zoomuc.weekline",
+  "appName": "WEEKLINE",
+  "webDir": "www",
+  "backgroundColor": "#F5F3EC",
+  "ios": {
+    "contentInset": "never",
+    "backgroundColor": "#F5F3EC",
+    "limitsNavigationsToAppBoundDomains": false
+  },
+  "plugins": {
+    "LocalNotifications": {
+      "presentationOptions": ["banner", "sound", "list"]
+    }
+  }
+}
