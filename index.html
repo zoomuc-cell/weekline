@@ -538,6 +538,74 @@ function spread(c){
     R.top=(year?'연 260일':'분기 65일');R.first=pm+'일 달성';R.week='주 5일 실행';R.weekNote='주말은 회복';R.day='오늘 1회 실행';R.dayNote='요일별 일정에 배치';}
   return R;
 }
+
+/* ---------- goals by period: every goal's share for a year / quarter / month / week / today, plus its action guide ---------- */
+var PL={tabs:[["year", "연간"], ["quarter", "분기"], ["month", "월간"], ["week", "주간"], ["day", "오늘"]]};
+function plBase(){var u=S.ui.plan||(S.ui.plan={unit:'month',off:0}),d=parseYmd(todayStr());
+  if(u.unit==='year')d=new Date(Date.UTC(d.getUTCFullYear()+u.off,0,1));
+  else if(u.unit==='quarter'){var m=Math.floor(d.getUTCMonth()/3)*3+u.off*3;d=new Date(Date.UTC(d.getUTCFullYear(),m,1));}
+  else if(u.unit==='month')d=new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth()+u.off,1));
+  else if(u.unit==='week')d=addDays(d,7*u.off);else d=addDays(d,u.off);return d;}
+function plMonthIdx(g,d){var P=gPeriod(g),s=new Date(P.st);var i=(d.getUTCFullYear()-s.getUTCFullYear())*12+d.getUTCMonth()-s.getUTCMonth();return i>=0&&i<(g.months||[]).length?i:-1;}
+function plMonth(g,d){var i=plMonthIdx(g,d);return i<0?null:Object.assign({i:i},g.months[i]);}
+function plNum(s){var n=parseFloat(String(s==null?'':s).replace(/[^0-9.\-]/g,''));return isFinite(n)?n:0;}
+function plGuide(g,d){var m=plMonth(g,d),gd=g.guide||{},u=g.unit||'',t=m&&m.task||'',w,dy;
+  if(g.type==='num'){var mv=plNum(m&&m.value);w='이번 주 +{v}{u} 달성'.replace('{v}',fmt(mv/4.3)).replace('{u}',u);dy='+{v}{u} 확보 활동 30분'.replace('{v}',fmt(mv/4.3/5)).replace('{u}',u);}
+  else if(g.type==='proj'){w='{t} — 이번 주 1/4 완성'.replace('{t}',t||g.goal);dy='Deep Work 60분 · {t}'.replace('{t}',t||g.goal);}
+  else{w='주 5일 실행 (주말은 회복)';dy='오늘 1회 실행 · {g}'.replace('{g}',g.goal);}
+  return {month:m,week:gd.weekly||w,day:gd.daily||dy};}
+function plMonthText(g,m){if(!m)return '';var u=g.unit||'';if(g.type==='num')return '{v}{u}'.replace('{v}',m.value).replace('{u}',u)+(m.task?' · '+m.task:'');if(g.type==='proj')return '{t}'.replace('{t}',m.task||m.value);return '{v} 실행'.replace('{v}',m.value);}
+function plArea(g){var r=String(g.role||'');return /건강|운동|health|fitness/i.test(r)?'health':/배움|독서|공부|learn|read|study/i.test(r)?'learn':'biz';}
+function plFree(ds,dur){var bl=((S.days[ds]||{}).blocks||[]).filter(function(b){return !b.moved;}),n=kstNow(),start=ds===todayStr()?Math.max(540,Math.ceil((n.getUTCHours()*60+n.getUTCMinutes())/30)*30):540;
+  for(var s=start;s+dur<=1290;s+=30){if(!bl.some(function(b){return b.s<s+dur&&b.e>s;}))return s;}return -1;}
+function plGoals(){var all=Object.values(S.goals||{}).filter(function(g){return g&&g.goal;}),out={me:[],org:[]};
+  all.forEach(function(g){var z=gScopeOf(g);if(z==='me'||z==='both')out.me.push(g);if(z==='org'||z==='both')out.org.push(g);});return out;}
+function plRow(g,sc,d){var U=S.ui.plan.unit,P=gPeriod(g),a=gAch(g,sc),st=gStatus(a,P.el),G=plGuide(g,d),m=G.month,body='',acts='';
+  var inRange=d.getTime()>=P.st&&d.getTime()<P.en;
+  if(U==='year'){body='<b class="num">'+a+'%</b> <span class="xs muted">달성 · 기간 경과 '+P.el+'%</span>';}
+  else if(U==='quarter'){var q=Math.floor(d.getUTCMonth()/3),ql=g.level==='year'?(g.quarters||[])[q]:(inRange?{l:'Q'+(q+1),v:g.goal}:null);
+    if(!ql||!inRange)return '';body='<b>'+esc(ql.l)+'</b> · '+esc(ql.v);
+    var ms=[0,1,2].map(function(k){return plMonth(g,new Date(Date.UTC(d.getUTCFullYear(),q*3+k,1)));}).filter(Boolean);
+    if(ms.length)body+='<div class="xs muted" style="margin-top:4px">'+ms.map(function(x){return esc(g.months[x.i].name)+' '+esc(plMonthText(g,x));}).join(' · ')+'</div>';}
+  else if(U==='month'){if(!m)return '';var key=String(m.i),dn=!!(g.mdone&&g.mdone[key]);
+    body='<b>'+esc(plMonthText(g,m))+'</b><div class="xs muted" style="margin-top:4px">매주 실천 · '+esc(G.week)+'</div>';
+    acts='<button class="btn" data-act="plmdone" data-id="'+esc(g._id)+'" data-v="'+key+'" aria-pressed="'+dn+'" style="min-height:36px">'+(dn?'✓ 완료':'완료 표시')+'</button>';}
+  else if(U==='week'){if(!inRange)return '';var w=isoWeek(d),wdoc=weekDoc(w.id),rk=[];(wdoc&&wdoc.roles||[]).forEach(function(r,ri){(r.rocks||[]).forEach(function(k,ki){if(k.goal===g._id)rk.push({k:k,ri:ri,ki:ki});});});
+    body='<b>'+esc(G.week)+'</b>'+(m?'<div class="xs muted" style="margin-top:4px">월 목표 · '+esc(plMonthText(g,m))+'</div>':'');
+    if(rk.length)body+=rk.map(function(x){return '<div class="small" style="margin-top:6px">'+(x.k.done?'✓ ':'○ ')+esc(x.k.text)+'</div>';}).join('');
+    else acts='<button class="btn" data-act="plrock" data-id="'+esc(g._id)+'" data-w="'+w.id+'" style="min-height:36px">이번 주 큰 돌로 넣기</button>';}
+  else{if(!inRange)return '';var ds=ymd(d),bl=((S.days[ds]||{}).blocks||[]).filter(function(b){return b.goal===g._id;});
+    body='<b>'+esc(G.day)+'</b>'+(m?'<div class="xs muted" style="margin-top:4px">매주 실천 · '+esc(G.week)+'</div>':'');
+    if(bl.length)acts=bl.map(function(b){return '<button class="btn" data-act="plbdone" data-ds="'+ds+'" data-id="'+esc(b.id)+'" aria-pressed="'+!!b.done+'" style="min-height:36px">'+(b.done?'✓ ':'')+m2t(b.s)+' '+esc(b.title)+'</button>';}).join('');
+    else acts='<button class="btn" data-act="plday" data-id="'+esc(g._id)+'" data-ds="'+ds+'" style="min-height:36px">오늘 일정에 넣기</button>';}
+  return '<div style="padding:12px 0;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:6px"><div class="between"><span class="xs muted">'+esc(g.goal)+'</span><span class="pill '+st[1]+'">'+st[0]+'</span></div><div class="small">'+body+'</div>'+(acts?'<div class="row" style="gap:6px;flex-wrap:wrap">'+acts+'</div>':'')+'</div>';}
+function plLabel(d){var U=S.ui.plan.unit;if(U==='year')return d.getUTCFullYear()+'년';if(U==='quarter')return d.getUTCFullYear()+' Q'+(Math.floor(d.getUTCMonth()/3)+1);
+  if(U==='month')return d.getUTCFullYear()+'.'+(d.getUTCMonth()+1);if(U==='week'){var w=isoWeek(d);return w.id;}return ymd(d);}
+function vPlan(){var u=S.ui.plan||(S.ui.plan={unit:'month',off:0}),d=plBase(),SN=scopeNames(),G=plGoals();
+  var h=header('단위별 목표','큰 목표가 분기 · 월 · 주 · 오늘로 어떻게 내려왔는지 한눈에 봅니다.',null,['goals','목표']);
+  h+='<div class="seg" role="group" style="grid-template-columns:repeat(5,minmax(0,1fr))">'+PL.tabs.map(function(t){return '<button type="button" data-act="plunit" data-v="'+t[0]+'" aria-pressed="'+(u.unit===t[0])+'">'+t[1]+'</button>';}).join('')+'</div>';
+  h+='<div class="between" style="align-items:center"><button class="btn" data-act="ploff" data-v="-1" aria-label="이전">‹</button><strong class="num">'+esc(plLabel(d))+'</strong><button class="btn" data-act="ploff" data-v="1" aria-label="다음">›</button></div>';
+  if(!G.me.length&&!G.org.length)return h+emptyBox('아직 목표가 없습니다. 목표를 하나 세우면 여기서 단위별로 나눠 보여 드립니다.')+'<button class="btn primary" data-go="cascade">+ 목표 세우기</button>';
+  ['me','org'].forEach(function(sc){if(!G[sc].length)return;var rows=G[sc].map(function(g){return plRow(g,sc,d);}).join('');
+    h+='<section class="card"><h2>'+esc(SN[sc])+'</h2>'+(rows||'<p class="xs muted" style="margin:0">이 기간에 해당하는 몫이 없습니다</p>')+'</section>';});
+  return h;}
+function plAct(a,b){
+  if(a==='plunit'){S.ui.plan.unit=b.dataset.v;S.ui.plan.off=0;render();return true;}
+  if(a==='ploff'){S.ui.plan.off+=+b.dataset.v;render();return true;}
+  if(a==='plmdone'){var g=S.goals[b.dataset.id];if(!g)return true;var md=Object.assign({},g.mdone||{});md[b.dataset.v]=!md[b.dataset.v];g.mdone=md;save('goals/'+g._id,{mdone:md},true);render();return true;}
+  if(a==='plrock'){var g2=S.goals[b.dataset.id];if(!g2)return true;var G2=plGuide(g2,plBase()),wid=b.dataset.w,wd2=S.weeks[wid]||ensureWeek(isoWeek(plBase())),role=g2.role||((wd2.roles[0]||{}).name)||'개인',r=wd2.roles.find(function(x){return x.name===role;});
+    if(!r){r={name:role,sub:'',rocks:[]};wd2.roles.push(r);}r.rocks.push({text:g2.goal+' — '+G2.week,day:0,done:false,goal:g2._id});writeWeek(wid);toast('이번 주 큰 돌에 넣었습니다');render();return true;}
+  if(a==='plday'){var g3=S.goals[b.dataset.id],ds=b.dataset.ds;if(!g3)return true;var s=plFree(ds,30);if(s<0){toast('오늘 남은 빈 시간이 없습니다');return true;}
+    if(!S.days[ds])S.days[ds]={_id:ds,date:ds,blocks:[]};S.days[ds].blocks=(S.days[ds].blocks||[]).concat([{id:'pg'+Date.now().toString(36),s:s,e:s+30,title:plGuide(g3,parseYmd(ds)).day,area:plArea(g3),detail:g3.goal,done:false,p:true,ex:false,goal:g3._id}]).sort(function(x,y){return x.s-y.s;});
+    writeDay(ds);toast('오늘 일정에 넣었습니다');render();return true;}
+  if(a==='plbdone'){var day=S.days[b.dataset.ds],bk=day&&(day.blocks||[]).find(function(x){return x.id===b.dataset.id;});if(bk){bk.done=!bk.done;writeDay(b.dataset.ds);render();}return true;}
+  return false;}
+function plGuideCard(c,R){var g={type:c.type,unit:c.unit,goal:c.goal||'…',months:R.names.map(function(n,i){return {name:n,value:R.months[i].v,task:R.months[i].t||''};}),level:c.level,created:new Date().toISOString()};
+  var auto=plGuide(g,parseYmd(todayStr()));
+  return '<section class="card"><div class="between"><h2>실천 가이드</h2></div><p class="xs muted" style="margin:0">목표를 매달 · 매주 · 매일 할 일로 나눴습니다. 고쳐 쓰면 그대로 저장됩니다.</p>'+
+    '<span class="label">월별 실천 목표</span><div style="display:flex;flex-direction:column;gap:4px">'+g.months.map(function(m,i){return '<div class="small"><b>'+esc(m.name)+'</b> · '+esc(plMonthText(g,Object.assign({i:i},m)))+'</div>';}).join('')+'</div>'+
+    '<label class="label" for="cweekly">매주 실천 (반복)</label><input id="cweekly" class="field" data-cin="weekly" value="'+esc(c.weekly||'')+'" placeholder="'+esc(auto.week)+'">'+
+    '<label class="label" for="cdaily">매일 실천 (반복)</label><input id="cdaily" class="field" data-cin="daily" value="'+esc(c.daily||'')+'" placeholder="'+esc(auto.day)+'"></section>';}
 function vCascade(){
   var c=S.ui.cascade,R=spread(c),h=header('목표 펼치기','큰 목표 하나를 넣으면 분기 · 월 · 주 · 오늘로 나눠 줍니다.');
   function seg(name,opts,cur,cols){return '<div class="seg" role="group" aria-label="'+name+'" style="grid-template-columns:repeat('+cols+',minmax(0,1fr))">'+opts.map(function(o){return '<button type="button" data-act="cset" data-f="'+name+'" data-v="'+o[0]+'" aria-pressed="'+(cur===o[0])+'">'+o[1]+'</button>';}).join('')+'</div>';}
@@ -554,6 +622,7 @@ function vCascade(){
     '<span class="label">월별 목표</span><div class="mbars" style="grid-template-columns:repeat('+R.months.length+',minmax(0,1fr))">'+R.months.map(function(m,i){return '<div><span class="num" style="font-weight:600">'+esc(m.v)+'</span><i style="height:'+m.h+'px;background:'+(i===0?'var(--accent)':'var(--accent-mid)')+'"></i><span class="muted">'+R.names[i].replace('월','')+'</span></div>';}).join('')+'</div>'+
     '<div style="padding:10px 12px;border-radius:12px;background:var(--soft)" class="small"><b>'+R.names[0]+'</b> · '+esc(R.first)+'</div>'+
     '<div class="grid2"><div style="padding:12px;border-radius:14px;border:1px solid var(--line)"><span class="xs" style="font-weight:600;color:var(--accent)">이번 주 큰 돌</span><br><strong class="small">'+esc(R.week)+'</strong><br><span class="xs muted">'+esc(R.weekNote)+'</span></div><div style="padding:12px;border-radius:14px;border:1px solid var(--line)"><span class="xs" style="font-weight:600;color:var(--accent)">오늘 할 일</span><br><strong class="small">'+esc(R.day)+'</strong><br><span class="xs muted">'+esc(R.dayNote)+'</span></div></div></section>';
+  h+=plGuideCard(c,R);
   h+='<button class="btn primary" data-act="applyCascade"'+(c.goal.trim()?'':' disabled')+'>펼친 결과를 계획에 넣기</button><p class="xs muted" style="margin:0;text-align:center">목표 사슬(누적 탭)과 이번 주 '+esc(c.role)+' 역할 큰 돌에 들어갑니다.</p>';
   return h;
 }
@@ -603,6 +672,7 @@ function vGoals(){
   if(S.ui.grename)h+='<section class="card" style="gap:8px"><span class="label">목표 구분 이름 바꾸기 · 예: 팀, 그룹, 가족</span><div class="grid2"><input id="gsn-me" class="field" value="'+esc(SN.me)+'" aria-label="첫째 구분 이름" maxlength="8"><input id="gsn-org" class="field" value="'+esc(SN.org)+'" aria-label="둘째 구분 이름" maxlength="8"></div><div class="row" style="gap:8px"><button class="btn" data-act="grename" data-v="0" style="flex:1">취소</button><button class="btn primary" data-act="gsavenames" style="flex:2;min-height:48px;font-size:15px">저장</button></div></section>';
   else h+='<button class="back" data-act="grename" data-v="1" style="align-self:flex-end;margin-top:-6px">구분 이름 바꾸기 ('+esc(SN.me)+' · '+esc(SN.org)+')</button>';
   if(!gs.length)return h+emptyBox('아직 '+esc(SN[sc])+' 달성 목표가 없습니다.<br>연간·분기 목표를 하나 넣으면 월·주·오늘로 나눠지고, 진행 정도가 이 표지에 %로 쌓입니다.')+'<button class="btn primary" data-go="cascade">첫 '+esc(SN[sc])+' 목표 만들기</button>';
+  h+='<button class="linkcard" data-go="plan">단위별 목표 보기 · 연 · 분기 · 월 · 주 · 오늘</button>';
   var avg=Math.round(gs.reduce(function(s,x){return s+x.a;},0)/gs.length);
   var cnt={good:0,warn:0,done:0};gs.forEach(function(x){if(x.st[1]==='done')cnt.done++;else if(x.st[1]==='ok')cnt.good++;else cnt.warn++;});
   h+='<section class="card"><div class="row" style="gap:20px"><div class="ring" style="background:conic-gradient(var(--accent) '+(avg*3.6)+'deg,var(--grid) 0deg)"><div><b class="num">'+avg+'<span style="font-size:14px">%</span></b><span class="xs muted">전체 달성</span></div></div>'+
@@ -1075,8 +1145,8 @@ function overlapOf(ds,s,e,skipIdx){var d=S.days[ds];var hits=(d&&d.blocks||[]).f
 function repeatDates(ds,rep,count){var out=[ds];if(!rep||rep==='none')return out;var n=Math.min(52,Math.max(1,count||8));
   for(var i=1;i<n;i++){var d=parseYmd(ds);if(rep==='weekly')d=addDays(d,7*i);else if(rep==='biweekly')d=addDays(d,14*i);else{var y=d.getUTCFullYear(),mo=d.getUTCMonth()+i,last=new Date(Date.UTC(y,mo+1,0)).getUTCDate();d=new Date(Date.UTC(y,mo,Math.min(d.getUTCDate(),last)));}out.push(ymd(d));}return out;}
 
-var VIEWS={goals:vGoals,trips:vTrips,calendar:vCalendar,week:vWeek,today:vToday,review:vReview,cascade:vCascade,report:vReport,retro:vRetro,meeting:function(){return proOk()?vMeeting():vProLock();}};
-var TAB_OF={report:'week',retro:'week',review:'goals',insights:'goals',cascade:'goals',trips:'calendar'};
+var VIEWS={goals:vGoals,trips:vTrips,calendar:vCalendar,week:vWeek,today:vToday,review:vReview,cascade:vCascade,plan:vPlan,report:vReport,retro:vRetro,meeting:function(){return proOk()?vMeeting():vProLock();}};
+var TAB_OF={report:'week',retro:'week',review:'goals',insights:'goals',cascade:'goals',plan:'goals',trips:'calendar'};
 VIEWS.today=(function(f){return function(){return f()+memoCard('day');};})(VIEWS.today);
 VIEWS.week=(function(f){return function(){return f()+memoCard('week');};})(VIEWS.week);
 function route(){var h=(location.hash||'').replace('#','');return VIEWS[h]?h:'goals';}
@@ -1101,6 +1171,7 @@ function writeDay(ds){var d=S.days[ds];var o={};Object.keys(d).forEach(function(
 document.addEventListener('click',function(e){
   var go=e.target.closest('[data-go]');if(go){S.ui.focus=go.getAttribute('data-focus')||null;var gh=go.getAttribute('data-go');if((location.hash||'').replace('#','')===gh){render();window.scrollTo(0,0);applyFocus();}else location.hash=gh;return;}
   var b=e.target.closest('[data-act]');if(!b||b.disabled)return;var a=b.getAttribute('data-act'),cw=curWeek();
+  if(plAct(a,b))return;
   if(a==='probuy'){if(PRO.store)PRO.store.buy(b.dataset.v);return;}
   if(a==='prorestore'){if(PRO.store)PRO.store.restore();return;}
   if(a==='newWeek'){ensureWeek(cw);render();}
@@ -1134,7 +1205,7 @@ document.addEventListener('click',function(e){
   else if(a==='gset'){var gg=S.goals[b.dataset.id],gv=+b.dataset.v;if(gg){gSet(b.dataset.id,{progress:gv});if(gv===100)toast('달성을 축하드립니다!');render();}}
   else if(a==='gdel'){var gd=S.goals[b.dataset.id];if(gd&&S.ui.gdelArm!==b.dataset.id){S.ui.gdelArm=b.dataset.id;render();return;}if(gd){S.ui.gdelArm=null;delete S.goals[b.dataset.id];if(S.db)S.db.doc('goals/'+b.dataset.id).delete();S.ui.gopen=null;toast('목표를 삭제했습니다');render();}}
   else if(a==='applyCascade'){var c=S.ui.cascade,R=spread(c),gid2='g'+Date.now().toString(36);
-    save('goals/'+gid2,{scope:c.scope||curScope(),goal:c.goal,level:c.level,type:c.type,target:Number(c.target)||0,unit:c.unit,mode:c.mode,role:c.role,months:R.names.map(function(n,i){return {name:n,value:R.months[i].v,task:R.months[i].t||''};}),quarters:R.quarters,week:R.week,day:R.day,progress:0,created:new Date().toISOString()});
+    save('goals/'+gid2,{scope:c.scope||curScope(),goal:c.goal,level:c.level,type:c.type,target:Number(c.target)||0,unit:c.unit,mode:c.mode,role:c.role,months:R.names.map(function(n,i){return {name:n,value:R.months[i].v,task:R.months[i].t||''};}),quarters:R.quarters,week:R.week,day:R.day,progress:0,guide:{weekly:(c.weekly||'').trim(),daily:(c.daily||'').trim()},created:new Date().toISOString()});c.weekly='';c.daily='';
     var wd4=ensureWeek(cw),tr2=wd4.roles.find(function(x){return x.name===c.role;});if(!tr2){tr2={name:c.role,sub:'',rocks:[]};wd4.roles.push(tr2);}
     tr2.rocks.push({text:c.goal+' — '+R.week,day:wd(parseYmd(todayStr())),done:false,goal:gid2});writeWeek(cw.id);toast('목표 사슬과 이번 주 '+c.role+' 역할에 넣었습니다');location.hash='goals';}
   else if(a==='cmode'){S.ui.cal.mode=b.dataset.v;if(b.dataset.v!=='day')S.ui.edit=null;render();}

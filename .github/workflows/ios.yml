@@ -29,7 +29,7 @@ jobs:
         run: python3 build_www.py
       - run: npx cap sync ios
       - name: Check the native bridge (alerts, backup) in a browser
-        run: npm i -g playwright@1 && playwright install chromium && node qa/test_native.js
+        run: npm i -g playwright@1 && playwright install chromium && node qa/test_native.js && node qa/test_plan.js
       - name: Compile for the iOS Simulator (no signing)
         run: |
           xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Debug \
