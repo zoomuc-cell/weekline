@@ -69,6 +69,19 @@ Play Console 순서: 결제 프로필(판매자 계정) → 결제 기능이 든
 Actions › 최근 *Android app* 실행 › Artifacts 의 `WEEKLINE-android-debug-apk` 를 받아 폰에서 열고 '출처를 알 수 없는 앱 설치'를 허용합니다.
 나중에 Play 스토어판을 설치하려면 이 테스트판을 먼저 지워야 합니다 (서명이 달라서).
 
+## App Store 출시 체크리스트 (PRO 포함)
+
+1. Apple Developer Program 가입 (연 US$99) — 조직 계정은 D-U-N-S 번호 필요.
+2. App Store Connect › 계약/세금/금융 — **유료 앱 계약** 동의, 은행·세금 정보 입력 (인앱 결제를 팔려면 필수).
+3. 앱 만들기: 번들 ID `com.auratechnologies.weekline`, 이름 WEEKLINE.
+4. 인앱 구입 만들기 (ID는 앱 코드와 정확히 같아야 함)
+   - 구독 그룹 `WEEKLINE PRO`: 자동 갱신 구독 `weekline_pro_monthly`(2,900원) · `weekline_pro_yearly`(19,900원)
+   - 비소모성 `weekline_pro_lifetime`(39,900원)
+5. 개인정보 처리방침 URL: https://zoomuc-cell.github.io/weekline/privacy.html · 이용약관: Apple 표준 EULA (결제 화면에 링크됨)
+6. 앱 개인정보 라벨: "수집하는 데이터 없음" (결제는 Apple 처리).
+7. GitHub Secrets 4개(위 TestFlight 절) 등록 → Actions › iOS app › Run workflow(testflight) → TestFlight에서 Sandbox 계정으로 구매 확인 → 심사 제출.
+8. 심사 메모: "로그인 없음. PRO(미팅) 기능은 설치 후 14일 무료 체험으로 모두 열려 있음. 알림·공유 시트 등 기기 기능 사용."
+
 ## 지금 바로 내 아이폰에 설치 (개발자 가입 없이)
 
 푸시마다 워크플로가 아이폰용 **`WEEKLINE.ipa`** (서명 안 됨)를 만듭니다. 무료 Apple ID로 서명해서 설치합니다.

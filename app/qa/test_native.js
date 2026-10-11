@@ -76,6 +76,7 @@ window.Capacitor={isNativePlatform:()=>true,getPlatform:()=>window.__plat||'ios'
     await p.goto('http://localhost:8772/#meeting');await p.waitForTimeout(900);
     const plans=await p.$$eval('[data-act="probuy"]',x=>x.map(e=>e.dataset.v+':'+e.textContent.match(/₩[\d,]+/)));
     ok(JSON.stringify(plans)==='["yearly:₩19,900","monthly:₩2,900","lifetime:₩39,900"]',plat+': trial over → PRO plans with store prices '+JSON.stringify(plans));
+    ok((await p.$$('a[href*="apple.com/legal"]')).length===(plat==='ios'?1:0),plat+': Terms of Use (EULA) link '+(plat==='ios'?'shown':'not needed'));
     await p.click('[data-act="probuy"][data-v="yearly"]');await p.waitForTimeout(500);
     const buy=await p.evaluate(()=>__calls.filter(c=>c[0]==='buy').map(c=>c[1]));
     const want=plat==='android'?{productIdentifier:'weekline_pro',productType:'subs',planIdentifier:'yearly',offerToken:'ty'}:{productIdentifier:'weekline_pro_yearly',productType:'subs'};

@@ -81,6 +81,8 @@ NATIVE = r'''
         .catch(function(){})
         .then(function(){return NP.getProducts({productIdentifiers:['weekline_pro_lifetime'],productType:'inapp'});})
         .then(function(r){(r&&r.products||[]).forEach(function(p){PRO.prices.lifetime=p.priceString;});render();}).catch(function(){});};
+    /* App Store subscriptions must link the Terms of Use; Apple's standard EULA applies */
+    if(!AND)PRO.terms='https://www.apple.com/legal/internet-services/itunes/dev/stdeula/';
     PRO.store={
       buy:function(k){var x=IDS[k];if(!x)return;var o={productIdentifier:x[0],productType:x[2]};if(x[1])o.planIdentifier=x[1];if(PRO.offer[k])o.offerToken=PRO.offer[k];
         NP.purchaseProduct(o).then(function(){proLS('wl_pro','1');toast(PX.thanks);render();return check();})
