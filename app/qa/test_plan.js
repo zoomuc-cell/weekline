@@ -21,7 +21,16 @@ const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)process.exitCode=1;};
     await put('#cgoal',lang==='ko'?'매출 1200':'Revenue 1200');await put('#ctarget','1200');await put('#cunit',lang==='ko'?'만원':'k');
     await p.waitForTimeout(300);
     ok(!!(await p.$('#cweekly'))&&!!(await p.$('#cdaily')),lang+': action guide on the goal wizard');
-    const months=await p.$$eval('#app .card .small b',x=>x.length);ok(months>=12,lang+': guide lists every month ('+months+')');
+    const months=await p.$$eval('#app .card .small b',x=>x.length);ok(months>=13-(new Date().getMonth()+1),lang+': guide lists the months from now on ('+months+')');
+    ok((await p.textContent('#app')).includes(lang==='ko'?'영업·매출':'Sales'),lang+': wizard recognises a sales goal');
+    ok((await p.$eval('#cweekly',e=>e.placeholder)).includes(lang==='ko'?'신규 고객 접촉':'new prospects'),lang+': this month\'s stage sets the weekly action');
+    // a beginner gets a long base stage before intensity goes up
+    await put('#cgoal',lang==='ko'?'체력 키우기':'Build stamina');await p.click('[data-act="cset"][data-f="type"][data-v="habit"]');await p.click('[data-act="cset"][data-f="start"][data-v="new"]');await p.waitForTimeout(150);
+    const plan=await p.textContent('#app');
+    ok(plan.includes(lang==='ko'?'1. 기초 만들기':'1. Build a base')&&plan.includes(lang==='ko'?(new Date().getMonth()+1)+'월':['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][new Date().getMonth()])&&plan.includes(lang==='ko'?'3. 강도 올리기':'3. Raise intensity'),lang+': beginner stage plan starts this month with the base, then adapts and raises intensity');
+    await p.click('[data-act="cset"][data-f="start"][data-v="regular"]');await p.waitForTimeout(150);
+    ok(!(await p.textContent('#app')).includes(lang==='ko'?'1. 기초 만들기':'1. Build a base'),lang+': a regular skips the base stage');
+    await put('#cgoal',lang==='ko'?'매출 1200':'Revenue 1200');await p.click('[data-act="cset"][data-f="type"][data-v="num"]');await p.click('[data-act="cset"][data-f="start"][data-v="some"]');await p.waitForTimeout(150);
     await put('#cdaily',lang==='ko'?'고객 전화 3통':'Call 3 clients');
     await p.click('[data-act="applyCascade"]');await p.waitForTimeout(500);
     const g=Object.values(await col('goals'))[0];
@@ -32,6 +41,7 @@ const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)process.exitCode=1;};
     // month (default)
     const mon=new Date().getMonth()+1;
     ok((await txt()).includes('100'),lang+': month page shows this month\'s share (1200/12=100)');
+    ok((await txt()).includes(lang==='ko'?'단계 2':'Stage 2'),lang+': month shows its stage');
     await p.click('[data-act="plmdone"]');await p.waitForTimeout(200);
     ok((g2=>!!(g2.mdone&&Object.values(g2.mdone).some(Boolean)))(Object.values(await col('goals'))[0]),lang+': month marked done');
     // year / quarter
