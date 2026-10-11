@@ -6,39 +6,7 @@ on:
     paths: ['ios-app/**', 'index.html', 'en/index.html', 'privacy.html', 'en/privacy.html', '.github/workflows/ios.yml']
   workflow_dispatch:
     inputs:
-      device-ipa:
-    # Unsigned .ipa for sideloading (Sideloadly / AltStore re-sign it with the user's own Apple ID)
-    needs: build
-    runs-on: macos-15
-    defaults:
-      run:
-        working-directory: ios-app
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: ios-app/package-lock.json
-      - run: npm ci && python3 build_www.py && npx cap sync ios
-      - name: Build for iPhone (Release, unsigned)
-        run: |
-          xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release \
-            -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath build \
-            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
-            CURRENT_PROJECT_VERSION="${{ github.run_number }}" build | tail -n 40
-          APP=build/Build/Products/Release-iphoneos/App.app
-          test -f "$APP/App"
-          rm -rf Payload && mkdir Payload && cp -R "$APP" Payload/
-          zip -qry WEEKLINE.ipa Payload
-          ls -lh WEEKLINE.ipa
-      - uses: actions/upload-artifact@v4
-        with:
-          name: WEEKLINE-ipa
-          path: ios-app/WEEKLINE.ipa
-          retention-days: 90
-
-  testflight:
+      testflight:
         description: 'Upload a signed build to TestFlight (needs the App Store secrets)'
         type: boolean
         default: false
@@ -72,6 +40,38 @@ jobs:
         with:
           name: WEEKLINE-simulator-app
           path: ios-app/build/Build/Products/Debug-iphonesimulator/App.app
+
+  device-ipa:
+    # Unsigned .ipa for sideloading (Sideloadly / AltStore re-sign it with the user's own Apple ID)
+    needs: build
+    runs-on: macos-15
+    defaults:
+      run:
+        working-directory: ios-app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: ios-app/package-lock.json
+      - run: npm ci && python3 build_www.py && npx cap sync ios
+      - name: Build for iPhone (Release, unsigned)
+        run: |
+          xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release \
+            -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            CURRENT_PROJECT_VERSION="${{ github.run_number }}" build | tail -n 40
+          APP=build/Build/Products/Release-iphoneos/App.app
+          test -f "$APP/App"
+          rm -rf Payload && mkdir Payload && cp -R "$APP" Payload/
+          zip -qry WEEKLINE.ipa Payload
+          ls -lh WEEKLINE.ipa
+      - uses: actions/upload-artifact@v4
+        with:
+          name: WEEKLINE-ipa
+          path: ios-app/WEEKLINE.ipa
+          retention-days: 90
 
   testflight:
     if: github.event_name == 'workflow_dispatch' && inputs.testflight
