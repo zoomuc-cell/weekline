@@ -30,6 +30,19 @@ python3 build_www.py
 npx cap sync ios
 ```
 
+## 지금 바로 내 아이폰에 설치 (개발자 가입 없이)
+
+푸시마다 워크플로가 아이폰용 **`WEEKLINE.ipa`** (서명 안 됨)를 만듭니다. 무료 Apple ID로 서명해서 설치합니다.
+
+1. **ipa 받기** — GitHub › weekline › Actions › 최근 성공한 *iOS app* 실행 › 맨 아래 Artifacts 의 `WEEKLINE-ipa` (zip을 풀면 `WEEKLINE.ipa`).
+2. **Sideloadly 설치** — sideloadly.io (윈도우·맥 PC 필요). 윈도우는 iTunes·iCloud(애플 홈페이지판)도 설치.
+3. 아이폰을 USB로 PC에 연결 → Sideloadly 에 `WEEKLINE.ipa` 를 끌어놓고 Apple ID 입력 → **Start**.
+4. 아이폰 **설정 › 일반 › VPN 및 기기 관리** › 내 Apple ID › **신뢰**.
+5. iOS 16 이상은 **설정 › 개인정보 보호 및 보안 › 개발자 모드** 켜기 (재시동).
+
+무료 Apple ID 서명은 **7일마다 만료**됩니다 — 같은 PC에서 Sideloadly 로 다시 설치하면 기록은 그대로 남습니다
+(Sideloadly 의 자동 갱신을 켜 두면 같은 와이파이에서 알아서 연장). 만료 걱정 없이 쓰려면 아래 TestFlight 로 넘어가세요.
+
 ## App Store / TestFlight 올리기 (대표님이 할 일)
 
 1. **Apple Developer Program 가입** — developer.apple.com, 연 US$99 (약 13만 원). 개인 또는 사업자(D-U-N-S 번호 필요).

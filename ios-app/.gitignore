@@ -1,3 +1,6 @@
 node_modules/
 www/
 qa/*.png
+build/
+Payload/
+*.ipa
