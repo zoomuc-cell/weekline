@@ -30,7 +30,21 @@ const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)process.exitCode=1;};
     ok(plan.includes(lang==='ko'?'1. 기초 만들기':'1. Build a base')&&plan.includes(lang==='ko'?(new Date().getMonth()+1)+'월':['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][new Date().getMonth()])&&plan.includes(lang==='ko'?'3. 강도 올리기':'3. Raise intensity'),lang+': beginner stage plan starts this month with the base, then adapts and raises intensity');
     await p.click('[data-act="cset"][data-f="start"][data-v="regular"]');await p.waitForTimeout(150);
     ok(!(await p.textContent('#app')).includes(lang==='ko'?'1. 기초 만들기':'1. Build a base'),lang+': a regular skips the base stage');
-    await put('#cgoal',lang==='ko'?'매출 1200':'Revenue 1200');await p.click('[data-act="cset"][data-f="type"][data-v="num"]');await p.click('[data-act="cset"][data-f="start"][data-v="some"]');await p.waitForTimeout(150);
+    // personal conditions reshape the actions: weak knees, 15 minutes a day, 3 days a week
+    await p.click('[data-act="cset"][data-f="start"][data-v="some"]');await p.click('[data-act="cset"][data-f="mins"][data-v="15"]');await p.click('[data-act="cset"][data-f="days"][data-v="3"]');
+    await put('#cnote',lang==='ko'?'무릎이 약함':'weak knees');
+    const wk=await p.$eval('#cweekly',e=>e.placeholder),dy=await p.$eval('#cdaily',e=>e.placeholder),body=await p.textContent('#app');
+    ok(!/조깅|jog/i.test(wk)&&/자전거|bike/i.test(body),lang+': weak knees → no jogging, stationary bike instead ('+wk+')');
+    ok(!/[2-9]\d\s*(분|min)/.test(dy),lang+': daily action capped at 15 min ('+dy+')');
+    ok(!/[4-9](회| times)/.test(wk),lang+': weekly count capped at 3 ('+wk+')');
+    ok(body.includes(lang==='ko'?'무릎·관절 보호':'Knees and joints'),lang+': adjustments listed');
+    // numeric goals: the target is weighted by stage (less while building, more while strengthening)
+    await put('#cgoal',lang==='ko'?'영업이익 1200':'Operating profit 1200');await p.click('[data-act="cset"][data-f="type"][data-v="num"]');await p.click('[data-act="cset"][data-f="mode"][data-v="ramp"]');await p.click('[data-act="cset"][data-f="start"][data-v="new"]');
+    await put('#ctarget','1200');await put('#cnote','');
+    const vals=await p.$eval('#cweekly',e=>[...e.closest('section').querySelectorAll('.small')].map(e=>e.textContent).filter(t=>/^\s*(\d+월|[A-Z][a-z]{2})\s·/.test(t)).map(t=>+t.split('·')[1].replace(/[^0-9]/g,'')));
+    ok(vals.length>=1&&vals.reduce((a,b)=>a+b,0)>=1195&&vals.reduce((a,b)=>a+b,0)<=1205&&(vals.length<2||vals[0]<vals[vals.length-1]||vals.length===1),lang+': stage-weighted months add up to the target '+JSON.stringify(vals));
+    ok((await p.textContent('#app')).includes(lang==='ko'?'경영 성과':'Business'),lang+': business goal recognised');
+    await put('#cgoal',lang==='ko'?'매출 1200':'Revenue 1200');await p.click('[data-act="cset"][data-f="mode"][data-v="even"]');await p.click('[data-act="cset"][data-f="start"][data-v="some"]');await p.click('[data-act="cset"][data-f="mins"][data-v="0"]');await p.click('[data-act="cset"][data-f="days"][data-v="0"]');await p.waitForTimeout(150);
     await put('#cdaily',lang==='ko'?'고객 전화 3통':'Call 3 clients');
     await p.click('[data-act="applyCascade"]');await p.waitForTimeout(500);
     const g=Object.values(await col('goals'))[0];
@@ -40,13 +54,14 @@ const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)process.exitCode=1;};
     const txt=async()=>p.textContent('#app');
     // month (default)
     const mon=new Date().getMonth()+1;
-    ok((await txt()).includes('100'),lang+': month page shows this month\'s share (1200/12=100)');
+    const mo=new Date().getMonth(),left=12-mo,share=Math.round(1200/left).toLocaleString('ko-KR');
+    ok((await txt()).includes(share),lang+': even split over the months from now: '+share+' a month');
     ok((await txt()).includes(lang==='ko'?'단계 2':'Stage 2'),lang+': month shows its stage');
     await p.click('[data-act="plmdone"]');await p.waitForTimeout(200);
     ok((g2=>!!(g2.mdone&&Object.values(g2.mdone).some(Boolean)))(Object.values(await col('goals'))[0]),lang+': month marked done');
     // year / quarter
     await p.click('[data-act="plunit"][data-v="year"]');await p.waitForTimeout(200);ok(/\d+%/.test(await txt()),lang+': year page shows % achieved');
-    await p.click('[data-act="plunit"][data-v="quarter"]');await p.waitForTimeout(200);ok((await txt()).includes('300'),lang+': quarter page shows the quarter milestone (300)');
+    await p.click('[data-act="plunit"][data-v="quarter"]');await p.waitForTimeout(200);const qLeft=3-(mo%3);ok((await txt()).includes(Math.round(1200/left*qLeft).toLocaleString('ko-KR')),lang+': quarter milestone sums its remaining months');
     // week: add a big rock from the goal
     await p.click('[data-act="plunit"][data-v="week"]');await p.waitForTimeout(200);
     ok((await txt()).includes(lang==='ko'?'매출 1200 —':'Revenue 1200 —'),lang+': this week lists the big rock the wizard created');
@@ -62,6 +77,10 @@ const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)process.exitCode=1;};
     if(blk){ok(true,lang+': daily action placed at '+blk.s+' min');await p.click('[data-act="plbdone"]');await p.waitForTimeout(200);
       ok((((await col('days'))[T0]||{}).blocks||[]).find(b=>b.goal).done,lang+': ticked from the today page');}
     else ok((await txt()).length>0&&before>=0,lang+': no free slot left today (late in the day) — handled');
+    // conditions can be changed later from the period page
+    await p.click('[data-act="plfitopen"]');await p.waitForTimeout(150);
+    await p.click('[data-act="plfit"][data-f="mins"][data-v="15"]');await p.waitForTimeout(200);
+    ok(Object.values(await col('goals')).some(g=>g.fit&&g.fit.mins===15),lang+': conditions edited from the period page are saved on the goal');
     // navigation
     await p.click('[data-act="plunit"][data-v="month"]');await p.click('[data-act="ploff"][data-v="1"]');await p.waitForTimeout(200);
     ok(!errs.length,lang+': no page errors '+errs.join(' | '));
