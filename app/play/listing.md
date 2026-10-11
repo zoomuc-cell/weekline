@@ -6,7 +6,7 @@ Play Console › 성장 › 스토어 등록정보 에 붙여 넣습니다. 그�
 |---|---|
 | 앱 아이콘 (512×512) | `icon-512.png` |
 | 그래픽 이미지 (1024×500) | `feature-1024x500.png` |
-| 휴대전화 스크린샷 (2~8장) | `screenshot-ko-1.png` (+ 실제 폰 화면 캡처 추가 권장) |
+| 휴대전화 스크린샷 (2~8장) | `shot-ko-1-today.png`, `shot-ko-2-week.png`, `shot-ko-3-calendar.png` (예시 데이터) · 영어 `shot-en-1-today.png` |
 | 카테고리 | 생산성 |
 | 개인정보처리방침 | https://zoomuc-cell.github.io/weekline/privacy.html |
 
