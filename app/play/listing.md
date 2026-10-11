@@ -37,6 +37,10 @@ WEEKLINE은 한 해·분기 목표를 월, 주, 오늘의 일정으로 나눠 �
 ■ 보기 편하게
 · 글자 크기 조절, 다크 모드, 한국어·영어.
 
+■ PRO (미팅)
+· 미팅 잡기·재배치·출장 준비는 PRO 기능입니다. 설치 후 14일 동안 무료로 모두 써 보세요.
+· 월 2,900원 · 연 19,900원 · 평생 39,900원
+
 ## English (en-US)
 
 **App name**
@@ -64,10 +68,14 @@ WEEKLINE breaks yearly and quarterly goals down into months, weeks and today.
 ■ Easy to read
 · Adjustable text size, dark mode, Korean and English.
 
+■ PRO (meetings)
+· Booking, rescheduling and trip prep are PRO features — free for the first 14 days.
+· ₩2,900 a month · ₩19,900 a year · ₩39,900 lifetime
+
 ## 데이터 보안 (Data safety) 답변
 
 - 앱이 사용자 데이터를 수집하거나 공유하나요? → **아니요** (모든 기록은 기기에만 저장, 서버 전송 없음)
-- 광고 포함 → **아니요** · 인앱 구매 → 없음
+- 광고 포함 → **아니요** · 인앱 구매 → **있음** (PRO 구독·평생, 결제는 Google Play가 처리 — 개발자가 받는 결제 데이터 없음)
 - 콘텐츠 등급 설문 → 유틸리티/생산성, 폭력·성적 콘텐츠·사용자 간 소통·위치 공유 모두 **아니요** → 전체이용가
 - 타겟 연령 → 18세 이상 (어린이 대상 아님)
 - 정부 앱 / 금융 기능 / 건강 앱 → 아니요

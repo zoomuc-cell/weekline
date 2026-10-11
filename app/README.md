@@ -47,6 +47,23 @@ npx cap sync
 5. 2023년 11월 이후 만든 **개인** 개발자 계정은 프로덕션 신청 전에 **테스터 12명 이상이 14일 연속** 비공개 테스트에 참여해야 합니다.
 6. (선택) 이후 업로드 자동화 — Play Console › 설정 › API 액세스에서 서비스 계정을 만들고 '출시 관리자' 권한을 준 뒤, JSON 키를 `PLAY_SERVICE_ACCOUNT_JSON` Secret으로 등록 → Actions › Android app › Run workflow 에서 트랙(internal/alpha/production) 선택.
 
+## PRO (미팅 기능 유료화)
+
+- **무료:** 목표·주간·오늘 일정, 메모, 백업, 이미 잡힌 미팅과 그 알림.
+- **PRO:** 미팅 탭 전체 — 빈 시간 찾기·이동 시간, 미팅 확정·재배치, 지방·해외 출장 준비.
+- **체험:** 처음 실행부터 14일 무제한(기기에 시작일 저장). 끝나면 미팅 탭이 PRO 안내로 바뀝니다. 웹(PWA)도 같은 체험 후 앱 PRO로 안내.
+- 서버 없음 — 앱이 스토어의 구매 내역(`@capgo/native-purchases`)으로 PRO 여부를 확인합니다. 환불·만료되면 다음 실행 때 자동으로 풀립니다.
+
+| 상품 | 가격 | Google Play | App Store |
+|---|---|---|---|
+| 월간 | 2,900원 | 구독 `weekline_pro` · 기본 요금제 `monthly` (1개월 자동 갱신) | `weekline_pro_monthly` |
+| 연간 | 19,900원 | 구독 `weekline_pro` · 기본 요금제 `yearly` (1년 자동 갱신) | `weekline_pro_yearly` |
+| 평생 | 39,900원 (출시 첫 달 29,900원 이벤트 선택) | 일회성 제품 `weekline_pro_lifetime` | `weekline_pro_lifetime` (비소모성) |
+
+Play Console 순서: 결제 프로필(판매자 계정) → 결제 기능이 든 새 빌드를 테스트 트랙에 업로드 → 수익 창출 › 제품 › 구독 / 일회성 제품에서 위 ID로 만들고 활성화 → 라이선스 테스트에 본인 Gmail 추가(테스트 결제는 청구되지 않음).
+심사용 '앱 액세스' 안내: "로그인 없음. PRO 기능은 설치 후 14일 동안 무료 체험으로 모두 열려 있습니다."
+베타 테스터 혜택(1년 무료)은 Play Console › 프로모션 코드로 연간 구독을 제공합니다.
+
 ## 안드로이드 폰에 바로 설치 (스토어 없이)
 
 Actions › 최근 *Android app* 실행 › Artifacts 의 `WEEKLINE-android-debug-apk` 를 받아 폰에서 열고 '출처를 알 수 없는 앱 설치'를 허용합니다.

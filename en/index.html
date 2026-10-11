@@ -675,9 +675,31 @@ function placeArea(M){
     (q&&!sugg.length&&!place?'<span class="xs muted">Pick the travel time below.</span>':'')+
     (place?'<div class="row" style="padding:10px 12px;border-radius:12px;background:var(--accent-soft);gap:10px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" style="color:var(--accent)"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg><span style="display:flex;flex-direction:column"><strong class="small">'+place.dong+' · '+place.region+'</strong><span class="xs">'+esc((S.meta.settings&&S.meta.settings.office)||'[Office]')+' by car, one way, about '+place.mins+' min (normal traffic · longer at rush hour) · used as travel time</span></span></div>':'');
 }
+
+/* ---------- PRO: the meeting planner is free for 14 days, then needs PRO (bought in the phone app) ---------- */
+var PRO={days:14,store:null,prices:{},offer:{}};
+function proLS(k,v){try{if(v===undefined)return localStorage.getItem(k);if(v===null)localStorage.removeItem(k);else localStorage.setItem(k,v);}catch(e){}return null;}
+function proStart(){var s=+proLS('wl_pro_start');if(!s){s=Date.now();proLS('wl_pro_start',String(s));}return s;}
+function proTrialLeft(){return Math.max(0,Math.ceil((proStart()+PRO.days*864e5-Date.now())/864e5));}
+function isPro(){return proLS('wl_pro')==='1';}
+function proOk(){return isPro()||proTrialLeft()>0;}
+function proBadge(){return '<p class="xs muted" style="margin:-4px 0 10px">'+(isPro()?'PRO active':'PRO free trial · {n} days left'.replace('{n}',proTrialLeft()))+'</p>';}
+function vProLock(){
+  var h=header('Meeting PRO','Your 14-day free trial has ended. Keep booking meetings with PRO.');
+  h+='<div class="card"><ul style="margin:0;padding-left:20px;line-height:1.9"><li>Find open times · travel time</li><li>Confirm and reschedule meetings</li><li>Trip prep plans (domestic and overseas)</li><li>Prep and departure alerts even when the app is closed</li></ul><p class="xs muted" style="margin:10px 0 0">Meetings already booked, their alerts, goals, schedule, memos and backup stay free.</p></div>';
+  if(PRO.store){
+    h+=[['yearly','Yearly','₩19,900','₩1,658 a month · save 43%'],['monthly','Monthly','₩2,900','Cancel any time'],['lifetime','Lifetime','₩39,900','Pay once, keep it']].map(function(p,i){var pr=PRO.prices[p[0]]||p[2];
+      return '<button class="card" data-act="probuy" data-v="'+p[0]+'" style="display:block;width:100%;text-align:left;cursor:pointer;font:inherit;color:inherit'+(i===0?';border:2px solid var(--accent,#1E5B47)':'')+'"><span style="display:flex;align-items:center;justify-content:space-between;gap:12px"><span><b>'+p[1]+'</b>'+(i===0?' <span class="pill good">Best value</span>':'')+'<br><span class="xs muted">'+p[3]+'</span></span><b class="num" style="font-size:18px">'+esc(pr)+'</b></span></button>';}).join('');
+    h+='<div class="row" style="justify-content:center;margin:6px 0"><button class="btn" data-act="prorestore">Restore purchase</button></div><p class="xs muted" style="text-align:center">Subscriptions can be cancelled any time in Google Play or the App Store.</p>';
+  }else{
+    h+='<div class="card"><p style="margin:0 0 12px">Buy PRO in the WEEKLINE phone app to book unlimited meetings.</p><a class="btn primary" href="https://play.google.com/store/apps/details?id=com.auratechnologies.weekline" target="_blank" rel="noopener">Get it on Google Play</a></div>';
+  }
+  return h;
+}
 function vMeeting(){
   var M=S.ui.meeting;if(!M.scope)M.scope='local';
   var h=header('Book a meeting','For nearby meetings it finds open times; for out-of-town and overseas trips it sets up prep and alerts.');
+  h+=proBadge();
   h+=nlBox('m');
   h+='<div class="seg" role="group" aria-label="Meeting area" style="grid-template-columns:repeat(3,minmax(0,1fr))">'+[['local','Nearby'],['domestic','Out of town'],['overseas','Overseas']].map(function(o){return '<button type="button" data-act="mscope" data-v="'+o[0]+'" aria-pressed="'+(M.scope===o[0])+'">'+o[1]+'</button>';}).join('')+'</div>';
   if(M.scope!=='local')return h+vTripForm(M);
@@ -1053,7 +1075,7 @@ function overlapOf(ds,s,e,skipIdx){var d=S.days[ds];var hits=(d&&d.blocks||[]).f
 function repeatDates(ds,rep,count){var out=[ds];if(!rep||rep==='none')return out;var n=Math.min(52,Math.max(1,count||8));
   for(var i=1;i<n;i++){var d=parseYmd(ds);if(rep==='weekly')d=addDays(d,7*i);else if(rep==='biweekly')d=addDays(d,14*i);else{var y=d.getUTCFullYear(),mo=d.getUTCMonth()+i,last=new Date(Date.UTC(y,mo+1,0)).getUTCDate();d=new Date(Date.UTC(y,mo,Math.min(d.getUTCDate(),last)));}out.push(ymd(d));}return out;}
 
-var VIEWS={goals:vGoals,trips:vTrips,calendar:vCalendar,week:vWeek,today:vToday,review:vReview,cascade:vCascade,report:vReport,retro:vRetro,meeting:vMeeting};
+var VIEWS={goals:vGoals,trips:vTrips,calendar:vCalendar,week:vWeek,today:vToday,review:vReview,cascade:vCascade,report:vReport,retro:vRetro,meeting:function(){return proOk()?vMeeting():vProLock();}};
 var TAB_OF={report:'week',retro:'week',review:'goals',insights:'goals',cascade:'goals',trips:'calendar'};
 VIEWS.today=(function(f){return function(){return f()+memoCard('day');};})(VIEWS.today);
 VIEWS.week=(function(f){return function(){return f()+memoCard('week');};})(VIEWS.week);
@@ -1079,6 +1101,8 @@ function writeDay(ds){var d=S.days[ds];var o={};Object.keys(d).forEach(function(
 document.addEventListener('click',function(e){
   var go=e.target.closest('[data-go]');if(go){S.ui.focus=go.getAttribute('data-focus')||null;var gh=go.getAttribute('data-go');if((location.hash||'').replace('#','')===gh){render();window.scrollTo(0,0);applyFocus();}else location.hash=gh;return;}
   var b=e.target.closest('[data-act]');if(!b||b.disabled)return;var a=b.getAttribute('data-act'),cw=curWeek();
+  if(a==='probuy'){if(PRO.store)PRO.store.buy(b.dataset.v);return;}
+  if(a==='prorestore'){if(PRO.store)PRO.store.restore();return;}
   if(a==='newWeek'){ensureWeek(cw);render();}
   else if(a==='rock'){var w=weekDoc(cw.id),k=w.roles[+b.dataset.r].rocks[+b.dataset.k];k.done=!k.done;writeWeek(cw.id);render();}
   else if(a==='newDay'){var ds=b.dataset.date;S.days[ds]=Object.assign({_id:ds},dayTemplate(ds));writeDay(ds);render();}

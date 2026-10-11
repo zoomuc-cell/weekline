@@ -13,7 +13,10 @@ window.Capacitor={isNativePlatform:()=>true,getPlatform:()=>window.__plat||'ios'
   getPending:async()=>({notifications:__pending.map(n=>({id:n.id}))}),cancel:async(a)=>{rec('cancel',a);__pending=[];},schedule:async(a)=>{rec('schedule',a);__pending=a.notifications;return {notifications:a.notifications.map(n=>({id:n.id}))};},
   checkExactNotificationSetting:async()=>({exact_alarm:__exact}),changeExactNotificationSetting:async()=>{rec('exact');__exact='granted';return {exact_alarm:'granted'};}},
  Filesystem:{writeFile:async(a)=>{rec('write',a);return {uri:'file:///cache/'+a.path};}},
- Share:{share:async(a)=>{rec('share',a);return {};}}}};`;
+ Share:{share:async(a)=>{rec('share',a);return {};}},
+ NativePurchases:{__owned:[],getPurchases:async()=>({purchases:window.Capacitor.Plugins.NativePurchases.__owned}),restorePurchases:async()=>{rec('restore');},
+  getProducts:async(o)=>{rec('products',o);return {products:o.productType==='subs'?(window.__plat==='android'?[{identifier:'monthly',priceString:'₩2,900',offerToken:'tm'},{identifier:'yearly',priceString:'₩19,900',offerToken:'ty'}]:[{identifier:'weekline_pro_monthly',priceString:'₩2,900'},{identifier:'weekline_pro_yearly',priceString:'₩19,900'}]):[{identifier:'weekline_pro_lifetime',priceString:'₩39,900'}]};},
+  purchaseProduct:async(o)=>{rec('buy',o);window.Capacitor.Plugins.NativePurchases.__owned=[{productIdentifier:o.productIdentifier,purchaseState:'1',isActive:true}];return {transactionId:'t1'};}}}};`;
 (async()=>{
   const b=await chromium.launch();
   for(const [lang,url,btn] of [['ko','http://localhost:8772/','미팅 알림 켜기'],['en','http://localhost:8772/en/index.html','Turn on meeting alerts']]){
@@ -62,6 +65,42 @@ window.Capacitor={isNativePlatform:()=>true,getPlatform:()=>window.__plat||'ios'
     ok(!(await p.$('[data-act="wlnotif-exact"]')),'android: button gone once allowed');
     await p.screenshot({path:__dirname+'/android-ko.png'});
     ok(errs.length===0,'android: no page errors '+errs.join(' | '));
+    await ctx.close();
+  }
+  // PRO: the meeting planner is free for 14 days, then the app sells PRO and the web points to the app
+  const OLD="localStorage.setItem('wl_pro_start',String(Date.now()-15*864e5));";
+  for(const plat of ['ios','android']){
+    const ctx=await b.newContext({locale:'ko-KR',viewport:{width:390,height:844}});
+    await ctx.addInitScript("window.__plat='"+plat+"';window.__perm='granted';"+OLD+MOCK);
+    const p=await ctx.newPage();const errs=[];p.on('pageerror',e=>errs.push(e.message));await p.route(/fonts\./,r=>r.abort());
+    await p.goto('http://localhost:8772/#meeting');await p.waitForTimeout(900);
+    const plans=await p.$$eval('[data-act="probuy"]',x=>x.map(e=>e.dataset.v+':'+e.textContent.match(/₩[\d,]+/)));
+    ok(JSON.stringify(plans)==='["yearly:₩19,900","monthly:₩2,900","lifetime:₩39,900"]',plat+': trial over → PRO plans with store prices '+JSON.stringify(plans));
+    await p.click('[data-act="probuy"][data-v="yearly"]');await p.waitForTimeout(500);
+    const buy=await p.evaluate(()=>__calls.filter(c=>c[0]==='buy').map(c=>c[1]));
+    const want=plat==='android'?{productIdentifier:'weekline_pro',productType:'subs',planIdentifier:'yearly',offerToken:'ty'}:{productIdentifier:'weekline_pro_yearly',productType:'subs'};
+    ok(buy.length===1&&JSON.stringify(buy[0])===JSON.stringify(want),plat+': yearly purchase request '+JSON.stringify(buy[0]));
+    ok(!(await p.$('[data-act="probuy"]'))&&!!(await p.$('[data-act="mscope"]')),plat+': planner unlocked after purchase');
+    ok((await p.textContent('#app')).includes('PRO 사용 중'),plat+': shows PRO active');
+    if(plat==='ios'){await p.screenshot({path:__dirname+'/pro-after.png'});}
+    ok(errs.length===0,plat+': no page errors '+errs.join(' | '));
+    await ctx.close();
+  }
+  {
+    // a bought PRO survives a fresh start (store purchase list), and a refunded one is withdrawn
+    const ctx=await b.newContext({locale:'ko-KR',viewport:{width:390,height:844}});
+    await ctx.addInitScript(OLD+"localStorage.setItem('wl_pro','1');"+MOCK);
+    const p=await ctx.newPage();await p.route(/fonts\./,r=>r.abort());await p.goto('http://localhost:8772/#meeting');await p.waitForTimeout(900);
+    ok(!!(await p.$('[data-act="probuy"]')),'refunded/expired PRO is withdrawn when the store no longer lists it');
+    await p.screenshot({path:__dirname+'/pro-lock.png'});
+    await ctx.close();
+  }
+  {
+    const ctx=await b.newContext({locale:'ko-KR',viewport:{width:390,height:844}});
+    const p=await ctx.newPage();await p.route(/fonts\./,r=>r.abort());await p.goto('http://localhost:8772/#meeting');await p.waitForTimeout(700);
+    ok((await p.textContent('#app')).includes('PRO 무료 체험 14일 남음')&&!!(await p.$('[data-act="mscope"]')),'browser: planner open during the trial with days left');
+    await p.evaluate(()=>{localStorage.setItem('wl_pro_start',String(Date.now()-15*864e5));location.hash='today';});await p.waitForTimeout(200);await p.evaluate(()=>{location.hash='meeting';});await p.waitForTimeout(400);
+    ok(!(await p.$('[data-act="mscope"]'))&&!(await p.$('[data-act="probuy"]'))&&!!(await p.$('a[href*="play.google.com"]')),'browser: after the trial the web points to the app');
     await ctx.close();
   }
   // without the bridge (plain browser) the native block stays out of the way

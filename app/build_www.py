@@ -64,6 +64,32 @@ NATIVE = r'''
     LN.requestPermissions().then(function(r){perm=r.display;toast(perm==='granted'?TX.yes:TX.no);return checkExact();}).then(function(){render();sync();});
   });
   LN.checkPermissions().then(function(r){perm=r.display;return checkExact();}).then(function(){render();sync();}).catch(function(){});
+  /* PRO purchase through Google Play / App Store (no server: the store's own purchase list is the source of truth) */
+  var NP=C.Plugins.NativePurchases;
+  if(NP){
+    var IDS=AND?{monthly:['weekline_pro','monthly','subs'],yearly:['weekline_pro','yearly','subs'],lifetime:['weekline_pro_lifetime','','inapp']}
+               :{monthly:['weekline_pro_monthly','','subs'],yearly:['weekline_pro_yearly','','subs'],lifetime:['weekline_pro_lifetime','','inapp']};
+    var PX=EN?{thanks:'Thank you! PRO is on.',fail:'The purchase did not go through.',restored:'PRO restored.',none:'No PRO purchase found for this account.'}
+             :{thanks:'감사합니다! PRO가 켜졌습니다.',fail:'결제가 완료되지 않았습니다.',restored:'PRO를 복원했습니다.',none:'이 계정에서 PRO 구매 내역을 찾지 못했습니다.'};
+    var check=function(){return NP.getPurchases(AND?{}:{onlyCurrentEntitlements:true}).then(function(r){
+      var own=(r.purchases||[]).some(function(t){return /^weekline_pro/.test(t.productIdentifier||'')&&(AND?t.purchaseState==='1':t.isActive!==false);});
+      if(own!==isPro()){proLS('wl_pro',own?'1':null);render();}}).catch(function(){});};
+    var prices=function(){
+      var subs=AND?['weekline_pro']:['weekline_pro_monthly','weekline_pro_yearly'];
+      return NP.getProducts({productIdentifiers:subs,productType:'subs'}).then(function(r){(r.products||[]).forEach(function(p){
+          var k=AND?p.identifier:String(p.identifier).replace('weekline_pro_','');if(!IDS[k]||p.offerId)return;PRO.prices[k]=p.priceString;if(p.offerToken)PRO.offer[k]=p.offerToken;});})
+        .catch(function(){})
+        .then(function(){return NP.getProducts({productIdentifiers:['weekline_pro_lifetime'],productType:'inapp'});})
+        .then(function(r){(r&&r.products||[]).forEach(function(p){PRO.prices.lifetime=p.priceString;});render();}).catch(function(){});};
+    PRO.store={
+      buy:function(k){var x=IDS[k];if(!x)return;var o={productIdentifier:x[0],productType:x[2]};if(x[1])o.planIdentifier=x[1];if(PRO.offer[k])o.offerToken=PRO.offer[k];
+        NP.purchaseProduct(o).then(function(){proLS('wl_pro','1');toast(PX.thanks);render();return check();})
+          .catch(function(e){if(!/cancel/i.test(String(e&&e.message||e)))toast(PX.fail);});},
+      restore:function(){NP.restorePurchases().catch(function(){}).then(check).then(function(){toast(isPro()?PX.restored:PX.none);});}
+    };
+    check();prices();
+    document.addEventListener('visibilitychange',function(){if(!document.hidden)check();});
+  }
   window.claude.use('db').then(function(db){if(db)db.collection('alerts').onSnapshot(function(s){last=s.docs;sync();});});
   document.addEventListener('visibilitychange',function(){if(!document.hidden)LN.checkPermissions().then(function(r){if(r.display!==perm){perm=r.display;render();}return checkExact();}).then(sync);});
 })();

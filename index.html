@@ -675,9 +675,31 @@ function placeArea(M){
     (q&&!sugg.length&&!place?'<span class="xs muted">아래에서 이동 시간을 직접 고르세요.</span>':'')+
     (place?'<div class="row" style="padding:10px 12px;border-radius:12px;background:var(--accent-soft);gap:10px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" style="color:var(--accent)"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg><span style="display:flex;flex-direction:column"><strong class="small">'+place.dong+' · '+place.region+'</strong><span class="xs">'+esc((S.meta.settings&&S.meta.settings.office)||'[사무실]')+'에서 차로 편도 약 '+place.mins+'분 (평시 예상 · 출퇴근 시간엔 더 걸림) · 이동 시간에 적용</span></span></div>':'');
 }
+
+/* ---------- PRO: the meeting planner is free for 14 days, then needs PRO (bought in the phone app) ---------- */
+var PRO={days:14,store:null,prices:{},offer:{}};
+function proLS(k,v){try{if(v===undefined)return localStorage.getItem(k);if(v===null)localStorage.removeItem(k);else localStorage.setItem(k,v);}catch(e){}return null;}
+function proStart(){var s=+proLS('wl_pro_start');if(!s){s=Date.now();proLS('wl_pro_start',String(s));}return s;}
+function proTrialLeft(){return Math.max(0,Math.ceil((proStart()+PRO.days*864e5-Date.now())/864e5));}
+function isPro(){return proLS('wl_pro')==='1';}
+function proOk(){return isPro()||proTrialLeft()>0;}
+function proBadge(){return '<p class="xs muted" style="margin:-4px 0 10px">'+(isPro()?'PRO 사용 중':'PRO 무료 체험 {n}일 남음'.replace('{n}',proTrialLeft()))+'</p>';}
+function vProLock(){
+  var h=header('미팅 PRO','무료 체험 14일이 끝났습니다. PRO로 미팅 잡기를 계속 쓰세요.');
+  h+='<div class="card"><ul style="margin:0;padding-left:20px;line-height:1.9"><li>빈 시간 찾기 · 이동 시간 계산</li><li>미팅 확정 · 다른 날로 재배치</li><li>지방·해외 출장 준비 일정</li><li>앱을 닫아도 오는 준비·출발 알림</li></ul><p class="xs muted" style="margin:10px 0 0">이미 잡힌 미팅과 알림, 목표·일정·메모·백업은 계속 무료입니다.</p></div>';
+  if(PRO.store){
+    h+=[['yearly','연간','19,900원','월 1,658원 · 43% 할인'],['monthly','월간','2,900원','언제든 해지'],['lifetime','평생','39,900원','한 번 결제로 계속']].map(function(p,i){var pr=PRO.prices[p[0]]||p[2];
+      return '<button class="card" data-act="probuy" data-v="'+p[0]+'" style="display:block;width:100%;text-align:left;cursor:pointer;font:inherit;color:inherit'+(i===0?';border:2px solid var(--accent,#1E5B47)':'')+'"><span style="display:flex;align-items:center;justify-content:space-between;gap:12px"><span><b>'+p[1]+'</b>'+(i===0?' <span class="pill good">추천</span>':'')+'<br><span class="xs muted">'+p[3]+'</span></span><b class="num" style="font-size:18px">'+esc(pr)+'</b></span></button>';}).join('');
+    h+='<div class="row" style="justify-content:center;margin:6px 0"><button class="btn" data-act="prorestore">구매 복원</button></div><p class="xs muted" style="text-align:center">구독은 Google Play·App Store에서 언제든 해지할 수 있습니다.</p>';
+  }else{
+    h+='<div class="card"><p style="margin:0 0 12px">휴대폰 앱(WEEKLINE)에서 PRO를 구매하면 미팅 잡기를 무제한으로 쓸 수 있습니다.</p><a class="btn primary" href="https://play.google.com/store/apps/details?id=com.auratechnologies.weekline" target="_blank" rel="noopener">Google Play에서 받기</a></div>';
+  }
+  return h;
+}
 function vMeeting(){
   var M=S.ui.meeting;if(!M.scope)M.scope='local';
   var h=header('미팅 잡기','근처 미팅은 가능한 시간을, 지방·해외는 준비 일정과 알림을 잡아 드립니다.');
+  h+=proBadge();
   h+=nlBox('m');
   h+='<div class="seg" role="group" aria-label="미팅 지역" style="grid-template-columns:repeat(3,minmax(0,1fr))">'+[['local','근처 (수도권)'],['domestic','지방'],['overseas','해외']].map(function(o){return '<button type="button" data-act="mscope" data-v="'+o[0]+'" aria-pressed="'+(M.scope===o[0])+'">'+o[1]+'</button>';}).join('')+'</div>';
   if(M.scope!=='local')return h+vTripForm(M);
@@ -1053,7 +1075,7 @@ function overlapOf(ds,s,e,skipIdx){var d=S.days[ds];var hits=(d&&d.blocks||[]).f
 function repeatDates(ds,rep,count){var out=[ds];if(!rep||rep==='none')return out;var n=Math.min(52,Math.max(1,count||8));
   for(var i=1;i<n;i++){var d=parseYmd(ds);if(rep==='weekly')d=addDays(d,7*i);else if(rep==='biweekly')d=addDays(d,14*i);else{var y=d.getUTCFullYear(),mo=d.getUTCMonth()+i,last=new Date(Date.UTC(y,mo+1,0)).getUTCDate();d=new Date(Date.UTC(y,mo,Math.min(d.getUTCDate(),last)));}out.push(ymd(d));}return out;}
 
-var VIEWS={goals:vGoals,trips:vTrips,calendar:vCalendar,week:vWeek,today:vToday,review:vReview,cascade:vCascade,report:vReport,retro:vRetro,meeting:vMeeting};
+var VIEWS={goals:vGoals,trips:vTrips,calendar:vCalendar,week:vWeek,today:vToday,review:vReview,cascade:vCascade,report:vReport,retro:vRetro,meeting:function(){return proOk()?vMeeting():vProLock();}};
 var TAB_OF={report:'week',retro:'week',review:'goals',insights:'goals',cascade:'goals',trips:'calendar'};
 VIEWS.today=(function(f){return function(){return f()+memoCard('day');};})(VIEWS.today);
 VIEWS.week=(function(f){return function(){return f()+memoCard('week');};})(VIEWS.week);
@@ -1079,6 +1101,8 @@ function writeDay(ds){var d=S.days[ds];var o={};Object.keys(d).forEach(function(
 document.addEventListener('click',function(e){
   var go=e.target.closest('[data-go]');if(go){S.ui.focus=go.getAttribute('data-focus')||null;var gh=go.getAttribute('data-go');if((location.hash||'').replace('#','')===gh){render();window.scrollTo(0,0);applyFocus();}else location.hash=gh;return;}
   var b=e.target.closest('[data-act]');if(!b||b.disabled)return;var a=b.getAttribute('data-act'),cw=curWeek();
+  if(a==='probuy'){if(PRO.store)PRO.store.buy(b.dataset.v);return;}
+  if(a==='prorestore'){if(PRO.store)PRO.store.restore();return;}
   if(a==='newWeek'){ensureWeek(cw);render();}
   else if(a==='rock'){var w=weekDoc(cw.id),k=w.roles[+b.dataset.r].rocks[+b.dataset.k];k.done=!k.done;writeWeek(cw.id);render();}
   else if(a==='newDay'){var ds=b.dataset.date;S.days[ds]=Object.assign({_id:ds},dayTemplate(ds));writeDay(ds);render();}
