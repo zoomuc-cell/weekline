@@ -1,0 +1,89 @@
+name: Android app
+
+on:
+  push:
+    branches: [main]
+    paths: ['app/**', 'index.html', 'en/index.html', 'privacy.html', 'en/privacy.html', '.github/workflows/android.yml']
+  workflow_dispatch:
+    inputs:
+      play_track:
+        description: 'Upload the signed bundle to this Google Play track (needs PLAY_SERVICE_ACCOUNT_JSON)'
+        type: choice
+        options: [none, internal, alpha, production]
+        default: none
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    env:
+      WL_VERSION_CODE: ${{ github.run_number }}
+      HAS_KEY: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+      - run: npm ci
+      - name: Build the app's web files from the published PWA
+        run: python3 build_www.py
+      - name: Check the native bridge (alerts, backup) in a browser
+        run: npm i -g playwright@1 && playwright install chromium && node qa/test_native.js
+      - run: npx cap sync android
+      - name: Debug APK (installs directly on a phone)
+        working-directory: app/android
+        run: ./gradlew --no-daemon assembleDebug && cp app/build/outputs/apk/debug/app-debug.apk ../WEEKLINE-debug.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: WEEKLINE-android-debug-apk
+          path: app/WEEKLINE-debug.apk
+          retention-days: 90
+      - name: Signed bundle (.aab for Google Play) and APK
+        if: env.HAS_KEY == 'true'
+        working-directory: app/android
+        env:
+          KEY_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          WL_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          WL_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          WL_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          echo "$KEY_B64" | base64 -d > "$RUNNER_TEMP/upload.jks"
+          export WL_KEYSTORE_FILE="$RUNNER_TEMP/upload.jks"
+          ./gradlew --no-daemon bundleRelease assembleRelease
+          cp app/build/outputs/bundle/release/app-release.aab ../WEEKLINE.aab
+          cp app/build/outputs/apk/release/app-release.apk ../WEEKLINE.apk
+          rm -f "$RUNNER_TEMP/upload.jks"
+      - if: env.HAS_KEY == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: WEEKLINE-play-bundle
+          path: |
+            app/WEEKLINE.aab
+            app/WEEKLINE.apk
+          retention-days: 90
+
+  play:
+    if: github.event_name == 'workflow_dispatch' && inputs.play_track != 'none'
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: WEEKLINE-play-bundle
+      - name: Upload to Google Play
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: com.auratechnologies.weekline
+          releaseFiles: WEEKLINE.aab
+          track: ${{ inputs.play_track }}
+          status: completed

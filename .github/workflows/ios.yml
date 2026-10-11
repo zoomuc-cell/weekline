@@ -3,7 +3,7 @@ name: iOS app
 on:
   push:
     branches: [main]
-    paths: ['ios-app/**', 'index.html', 'en/index.html', 'privacy.html', 'en/privacy.html', '.github/workflows/ios.yml']
+    paths: ['app/**', 'index.html', 'en/index.html', 'privacy.html', 'en/privacy.html', '.github/workflows/ios.yml']
   workflow_dispatch:
     inputs:
       testflight:
@@ -16,14 +16,14 @@ jobs:
     runs-on: macos-15
     defaults:
       run:
-        working-directory: ios-app
+        working-directory: app
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: ios-app/package-lock.json
+          cache-dependency-path: app/package-lock.json
       - run: npm ci
       - name: Build the app's web files from the published PWA
         run: python3 build_www.py
@@ -39,7 +39,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: WEEKLINE-simulator-app
-          path: ios-app/build/Build/Products/Debug-iphonesimulator/App.app
+          path: app/build/Build/Products/Debug-iphonesimulator/App.app
 
   device-ipa:
     # Unsigned .ipa for sideloading (Sideloadly / AltStore re-sign it with the user's own Apple ID)
@@ -47,14 +47,14 @@ jobs:
     runs-on: macos-15
     defaults:
       run:
-        working-directory: ios-app
+        working-directory: app
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: ios-app/package-lock.json
+          cache-dependency-path: app/package-lock.json
       - run: npm ci && python3 build_www.py && npx cap sync ios
       - name: Build for iPhone (Release, unsigned)
         run: |
@@ -70,7 +70,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: WEEKLINE-ipa
-          path: ios-app/WEEKLINE.ipa
+          path: app/WEEKLINE.ipa
           retention-days: 90
 
   testflight:
@@ -79,7 +79,7 @@ jobs:
     runs-on: macos-15
     defaults:
       run:
-        working-directory: ios-app
+        working-directory: app
     env:
       TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
       ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
@@ -93,7 +93,7 @@ jobs:
       - name: Check the App Store secrets are set
         run: |
           for v in TEAM_ID ASC_KEY_ID ASC_ISSUER_ID ASC_KEY_P8; do
-            if [ -z "${!v}" ]; then echo "::error::Secret for $v is missing (see ios-app/README.md)"; exit 1; fi
+            if [ -z "${!v}" ]; then echo "::error::Secret for $v is missing (see app/README.md)"; exit 1; fi
           done
       - run: npm ci && python3 build_www.py && npx cap sync ios
       - name: Archive and upload (Xcode cloud signing with an App Store Connect API key)
