@@ -17,8 +17,15 @@ jobs:
     defaults:
       run:
         working-directory: app
+        shell: bash  # -eo pipefail: a failing xcodebuild is not hidden by "| tail"
     steps:
       - uses: actions/checkout@v4
+      - name: Use the newest Xcode 26 (App Store uploads must be built with the iOS 26 SDK)
+        run: |
+          X=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -n 1)
+          if [ -n "$X" ]; then sudo xcode-select -s "$X"; fi
+          xcodebuild -version
+          xcrun --sdk iphoneos --show-sdk-version
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -48,8 +55,15 @@ jobs:
     defaults:
       run:
         working-directory: app
+        shell: bash  # -eo pipefail: a failing xcodebuild is not hidden by "| tail"
     steps:
       - uses: actions/checkout@v4
+      - name: Use the newest Xcode 26 (App Store uploads must be built with the iOS 26 SDK)
+        run: |
+          X=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -n 1)
+          if [ -n "$X" ]; then sudo xcode-select -s "$X"; fi
+          xcodebuild -version
+          xcrun --sdk iphoneos --show-sdk-version
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -80,6 +94,7 @@ jobs:
     defaults:
       run:
         working-directory: app
+        shell: bash  # -eo pipefail: a failing xcodebuild is not hidden by "| tail"
     env:
       TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
       ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
@@ -87,6 +102,12 @@ jobs:
       ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
     steps:
       - uses: actions/checkout@v4
+      - name: Use the newest Xcode 26 (App Store uploads must be built with the iOS 26 SDK)
+        run: |
+          X=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -n 1)
+          if [ -n "$X" ]; then sudo xcode-select -s "$X"; fi
+          xcodebuild -version
+          xcrun --sdk iphoneos --show-sdk-version
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -95,6 +116,10 @@ jobs:
           for v in TEAM_ID ASC_KEY_ID ASC_ISSUER_ID ASC_KEY_P8; do
             if [ -z "${!v}" ]; then echo "::error::Secret for $v is missing (see app/README.md)"; exit 1; fi
           done
+      - name: Check the SDK is new enough for App Store Connect
+        run: |
+          V=$(xcrun --sdk iphoneos --show-sdk-version | cut -d. -f1)
+          if [ "$V" -lt 26 ]; then echo "::error::iOS SDK $V is too old: App Store Connect only accepts builds made with the iOS 26 SDK (Xcode 26) or later"; exit 1; fi
       - run: npm ci && python3 build_www.py && npx cap sync ios
       - name: Archive and upload (Xcode cloud signing with an App Store Connect API key)
         run: |

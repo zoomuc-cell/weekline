@@ -80,3 +80,13 @@ WEEKLINE breaks yearly and quarterly goals down into months, weeks and today.
 - 타겟 연령 → 18세 이상 (어린이 대상 아님)
 - 정부 앱 / 금융 기능 / 건강 앱 → 아니요
 - 권한 설명: 알림(미팅 알림), 정확한 알람(미팅 시각 알림 — '알람 및 리마인더'), 부팅 후 알림 복원
+
+## 정확한 알람 권한 신고 (Play Console › 앱 콘텐츠 › 정확한 알람)
+
+앱이 `SCHEDULE_EXACT_ALARM` 을 선언하므로 Play Console에서 사용 이유를 묻습니다. 아래를 고르고 붙여 넣습니다.
+
+- 핵심 기능 분류: **캘린더 / 일정 알림** (알람 시계 앱 아님)
+- 사용 이유 (한국어):
+  > WEEKLINE은 사용자가 직접 잡은 미팅·출장의 준비 시각과 출발 시각을 정해진 분에 알려 주는 일정 플래너입니다. 알림이 몇 분 늦으면 출발 시각을 놓치게 되므로 정확한 알람이 필요합니다. 알람은 사용자가 등록한 일정에만, 다가오는 최대 60건까지만 예약하며, 사용자가 앱 안의 '정시 알림 허용' 버튼을 눌러 '알람 및 리마인더' 권한을 직접 켰을 때만 정시로 동작합니다. 허용하지 않으면 일반 알림으로 몇 분 늦게 전달됩니다.
+- Reason (English):
+  > WEEKLINE is a schedule planner that alerts users at the exact minute to prepare for and leave for meetings and trips they have booked themselves. An alert that arrives minutes late can make the user miss the departure time, so exact alarms are required. Alarms are set only for the user's own upcoming events (at most 60 at a time), and run exactly on time only after the user turns on "Alarms & reminders" through the in-app "Allow on-time alerts" button; otherwise they are delivered as regular, possibly delayed notifications.

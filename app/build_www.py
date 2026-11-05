@@ -56,6 +56,7 @@ NATIVE = r'''
     var name='weekline-backup-'+todayStr()+'.json';
     FS.writeFile({path:name,directory:'CACHE',encoding:'utf8',data:JSON.stringify({app:'WEEKLINE',version:1,exported:new Date().toISOString(),data:data})})
       .then(function(r){toast(TX.saved);return SH.share({title:name,files:[r.uri]});})
+      .then(function(){proLS('wl_last_backup',String(Date.now()));render();})
       .catch(function(e){if(!/cancel/i.test(String(e&&e.message||e)))toast(TX.fail);});
   };
   document.addEventListener('click',function(e){
@@ -73,24 +74,31 @@ NATIVE = r'''
              :{thanks:'감사합니다! PRO가 켜졌습니다.',fail:'결제가 완료되지 않았습니다.',restored:'PRO를 복원했습니다.',none:'이 계정에서 PRO 구매 내역을 찾지 못했습니다.'};
     var check=function(){return NP.getPurchases(AND?{}:{onlyCurrentEntitlements:true}).then(function(r){
       var own=(r.purchases||[]).some(function(t){return /^weekline_pro/.test(t.productIdentifier||'')&&(AND?t.purchaseState==='1':t.isActive!==false);});
-      if(own!==isPro()){proLS('wl_pro',own?'1':null);render();}}).catch(function(){});};
+      if(own!==isPro()){proLS('wl_pro',own?'1':null);render();}return own;}).catch(function(){return isPro();});};
+    /* only prices from the store are shown (local currency); buttons stay disabled until they arrive */
     var prices=function(){
-      var subs=AND?['weekline_pro']:['weekline_pro_monthly','weekline_pro_yearly'];
+      var subs=AND?['weekline_pro']:['weekline_pro_monthly','weekline_pro_yearly'],got=false;
       return NP.getProducts({productIdentifiers:subs,productType:'subs'}).then(function(r){(r.products||[]).forEach(function(p){
-          var k=AND?p.identifier:String(p.identifier).replace('weekline_pro_','');if(!IDS[k]||p.offerId)return;PRO.prices[k]=p.priceString;if(p.offerToken)PRO.offer[k]=p.offerToken;});})
+          var k=AND?p.identifier:String(p.identifier).replace('weekline_pro_','');if(!IDS[k]||p.offerId||!p.priceString)return;PRO.prices[k]=p.priceString;got=true;if(p.offerToken)PRO.offer[k]=p.offerToken;});})
         .catch(function(){})
         .then(function(){return NP.getProducts({productIdentifiers:['weekline_pro_lifetime'],productType:'inapp'});})
-        .then(function(r){(r&&r.products||[]).forEach(function(p){PRO.prices.lifetime=p.priceString;});render();}).catch(function(){});};
+        .then(function(r){(r&&r.products||[]).forEach(function(p){if(p.priceString){PRO.prices.lifetime=p.priceString;got=true;}});},function(){})
+        .then(function(){PRO.state=got?'ok':'fail';render();});};
+    PRO.platform=AND?'android':'ios';
     /* App Store subscriptions must link the Terms of Use; Apple's standard EULA applies */
     if(!AND)PRO.terms='https://www.apple.com/legal/internet-services/itunes/dev/stdeula/';
+    var busy=false;
     PRO.store={
-      buy:function(k){var x=IDS[k];if(!x)return;var o={productIdentifier:x[0],productType:x[2]};if(x[1])o.planIdentifier=x[1];if(PRO.offer[k])o.offerToken=PRO.offer[k];
+      buy:function(k){var x=IDS[k];if(!x||busy)return;busy=true;var o={productIdentifier:x[0],productType:x[2]};if(x[1])o.planIdentifier=x[1];if(PRO.offer[k])o.offerToken=PRO.offer[k];
         NP.purchaseProduct(o).then(function(){proLS('wl_pro','1');toast(PX.thanks);render();return check();})
-          .catch(function(e){if(!/cancel/i.test(String(e&&e.message||e)))toast(PX.fail);});},
-      restore:function(){NP.restorePurchases().catch(function(){}).then(check).then(function(){toast(isPro()?PX.restored:PX.none);});}
+          .catch(function(e){if(!/cancel/i.test(String(e&&e.message||e)))toast(PX.fail);})
+          .then(function(){busy=false;});},
+      restore:function(){if(busy)return;busy=true;NP.restorePurchases().catch(function(){}).then(check).then(function(own){busy=false;toast(own?PX.restored:PX.none);});},
+      /* iOS: Apple's own subscription sheet; Android: Play's subscription page */
+      manage:NP.manageSubscriptions?function(){NP.manageSubscriptions().catch(function(){});}:null
     };
     check();prices();
-    document.addEventListener('visibilitychange',function(){if(!document.hidden)check();});
+    document.addEventListener('visibilitychange',function(){if(document.hidden)return;check();if(PRO.state==='fail'){PRO.state='';prices();}});
   }
   window.claude.use('db').then(function(db){if(db)db.collection('alerts').onSnapshot(function(s){last=s.docs;sync();});});
   document.addEventListener('visibilitychange',function(){if(!document.hidden)LN.checkPermissions().then(function(r){if(r.display!==perm){perm=r.display;render();}return checkExact();}).then(sync);});

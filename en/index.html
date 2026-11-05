@@ -223,6 +223,8 @@ function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){retur
 function hm(x){x=Math.round(x);var h=Math.floor(x/60),m=x%60;return (h<10?'0':'')+h+':'+(m<10?'0':'')+m;}
 /* device-local wall clock kept in UTC fields (name kept from the KST-only version) */
 function kstNow(){return new Date(Date.now()-new Date().getTimezoneOffset()*6e4);}
+/* an instant as device-local wall clock in UTC fields (same convention as kstNow) */
+function localWall(ms){return new Date(ms-new Date(ms).getTimezoneOffset()*6e4);}
 function ymd(d){return d.getUTCFullYear()+'-'+String(d.getUTCMonth()+1).padStart(2,'0')+'-'+String(d.getUTCDate()).padStart(2,'0');}
 function parseYmd(s){var p=s.split('-');return new Date(Date.UTC(+p[0],+p[1]-1,+p[2]));}
 function addDays(d,n){return new Date(d.getTime()+n*864e5);}
@@ -571,7 +573,7 @@ function plAdj(t,f,k){t=String(t||'');
   if(k==='w'&&f.days){t=t.replace(new RegExp('(\\d+) times','g'),function(m,a){return Math.min(+a,f.days)+' times';});t=t.replace(new RegExp('(\\d) days a week'),function(m,a){return m.replace(a,Math.min(+a,f.days));});}
   if(k==='d'&&f.amOnly)t+=' · morning';if(k==='d'&&f.pmOnly)t+=' · evening';return t;}
 /* stage lengths over the months from when the goal is set: level sets the base, pace shifts it */
-function plStart(g){var N=(g.months||[]).length||12;return Math.max(0,Math.min(N-1,plMonthIdx(g,new Date(Date.parse(g.created||new Date().toISOString())+9*3600e3))));}
+function plStart(g){var N=(g.months||[]).length||12;return Math.max(0,Math.min(N-1,plMonthIdx(g,localWall(Date.parse(g.created||new Date().toISOString())))));}
 function plPhases(g){var f=plFit(g),N=(g.months||[]).length||12,s0=plStart(g),n=N-s0,W=({new:[4,3,3,2],some:[1,3,4,3],regular:[0,2,5,5]}[f.start]||[1,3,4,3]).slice();
   if(f.pace==='slow'){W[0]+=W[0]?1:0;W[1]+=1;}if(f.pace==='fast'){W[0]=Math.max(0,W[0]-1);W[3]+=1;}
   var sum=W.reduce(function(a,b){return a+b;},0),len=W.map(function(w){return Math.round(w*n/sum);}),d=n-len.reduce(function(a,b){return a+b;},0),k=len.length-1;
@@ -689,7 +691,7 @@ function vCascade(){
 
 /* goals cover */
 function gPeriod(g){
-  var c=g.created?new Date(Date.parse(g.created)+9*3600e3):kstNow(),y=c.getUTCFullYear(),q=Math.floor(c.getUTCMonth()/3);
+  var c=g.created?localWall(Date.parse(g.created)):kstNow(),y=c.getUTCFullYear(),q=Math.floor(c.getUTCMonth()/3);
   var st=g.level==='year'?Date.UTC(y,0,1):Date.UTC(y,q*3,1),en=g.level==='year'?Date.UTC(y+1,0,1):Date.UTC(y,q*3+3,1);
   var lab=g.level==='year'?''+y:y+' Q'+(q+1);
   return {st:st,en:en,label:lab,el:Math.max(0,Math.min(100,Math.round((kstNow().getTime()-st)/(en-st)*100))),left:Math.max(0,Math.ceil((en-kstNow().getTime())/864e5))};
@@ -806,23 +808,27 @@ function placeArea(M){
 }
 
 /* ---------- PRO: the meeting planner is free for 14 days, then needs PRO (bought in the phone app) ---------- */
-var PRO={days:14,store:null,prices:{},offer:{}};
+/* store: set by the phone app (buy, restore, manage); platform 'ios' | 'android'. appStore: the App Store page, filled in once the app is listed */
+var PRO={days:14,store:null,prices:{},offer:{},platform:'',terms:'',state:'',appStore:''};
 function proLS(k,v){try{if(v===undefined)return localStorage.getItem(k);if(v===null)localStorage.removeItem(k);else localStorage.setItem(k,v);}catch(e){}return null;}
 function proStart(){var s=+proLS('wl_pro_start');if(!s){s=Date.now();proLS('wl_pro_start',String(s));}return s;}
 function proTrialLeft(){return Math.max(0,Math.ceil((proStart()+PRO.days*864e5-Date.now())/864e5));}
 function isPro(){return proLS('wl_pro')==='1';}
 function proOk(){return isPro()||proTrialLeft()>0;}
-function proBadge(){return '<p class="xs muted" style="margin:-4px 0 10px">'+(isPro()?'PRO active':'PRO free trial · {n} days left'.replace('{n}',proTrialLeft()))+'</p>';}
-function vProLock(){
-  var h=header('Meeting PRO','Your 14-day free trial has ended. Keep booking meetings with PRO.');
+/* always one tap from the meeting page to PRO (buy, restore, manage), also during the free trial */
+function proBadge(){return '<p class="xs" style="margin:-4px 0 10px"><a href="#pro" style="color:var(--accent)">'+(isPro()?'PRO active · Manage':'PRO free trial · {n} days left · See PRO'.replace('{n}',proTrialLeft()))+'</a></p>';}
+function vPro(){
+  var pro=isPro(),left=proTrialLeft(),hd=pro?['WEEKLINE PRO','PRO is on. Thank you!']:left>0?['WEEKLINE PRO','{n} days of free trial left. After the trial, booking meetings needs PRO.'.replace('{n}',left)]:['Meeting PRO','Your 14-day free trial has ended. Keep booking meetings with PRO.'];
+  var h=header(hd[0],hd[1],null,(pro||left>0)?['meeting','Meetings']:null);
   h+='<div class="card"><ul style="margin:0;padding-left:20px;line-height:1.9"><li>Find open times · travel time</li><li>Confirm and reschedule meetings</li><li>Trip prep plans (domestic and overseas)</li><li>Prep and departure alerts even when the app is closed</li></ul><p class="xs muted" style="margin:10px 0 0">Meetings already booked, their alerts, goals, schedule, memos and backup stay free.</p></div>';
-  if(PRO.store){
-    h+=[['yearly','Yearly','₩19,900','₩1,658 a month · save 43%'],['monthly','Monthly','₩2,900','Cancel any time'],['lifetime','Lifetime','₩39,900','Pay once, keep it']].map(function(p,i){var pr=PRO.prices[p[0]]||p[2];
-      return '<button class="card" data-act="probuy" data-v="'+p[0]+'" style="display:block;width:100%;text-align:left;cursor:pointer;font:inherit;color:inherit'+(i===0?';border:2px solid var(--accent,#1E5B47)':'')+'"><span style="display:flex;align-items:center;justify-content:space-between;gap:12px"><span><b>'+p[1]+'</b>'+(i===0?' <span class="pill good">Best value</span>':'')+'<br><span class="xs muted">'+p[3]+'</span></span><b class="num" style="font-size:18px">'+esc(pr)+'</b></span></button>';}).join('');
-    h+='<div class="row" style="justify-content:center;margin:6px 0"><button class="btn" data-act="prorestore">Restore purchase</button></div><p class="xs muted" style="text-align:center">Monthly and yearly subscriptions renew automatically at the same price at the end of each period. Cancel any time, at least 24 hours before renewal, in Google Play (or the App Store) › Subscriptions. Lifetime PRO is a one-time payment. Payments are handled by Google or Apple. <a href="privacy.html" target="_blank" rel="noopener">Privacy policy</a>'+(PRO.terms?' · <a href="'+PRO.terms+'" target="_blank" rel="noopener">Terms of Use (EULA)</a>':'')+'</p>';
-  }else{
-    h+='<div class="card"><p style="margin:0 0 12px">Buy PRO in the WEEKLINE phone app to book unlimited meetings.</p><a class="btn primary" href="https://play.google.com/store/apps/details?id=com.auratechnologies.weekline" target="_blank" rel="noopener">Get it on Google Play</a></div>';
+  if(!PRO.store)return h+(pro?'':'<div class="card"><p style="margin:0 0 12px">PRO can only be bought and used inside the WEEKLINE phone app; it does not apply to the web version. Install the app to keep booking meetings with PRO.</p><div class="row" style="gap:8px;flex-wrap:wrap"><a class="btn primary" href="https://play.google.com/store/apps/details?id=com.auratechnologies.weekline" target="_blank" rel="noopener">Get it on Google Play</a>'+(PRO.appStore?'<a class="btn primary" href="'+PRO.appStore+'" target="_blank" rel="noopener">Download on the App Store</a>':'')+'</div></div>');
+  if(!pro){
+    h+=[['yearly','Yearly','1 year · renews every year'],['monthly','Monthly','1 month · renews every month'],['lifetime','Lifetime','One-time payment · no renewal']].map(function(p,i){var pr=PRO.prices[p[0]],off=!pr;
+      return '<button class="card" data-act="probuy" data-v="'+p[0]+'"'+(off?' disabled aria-disabled="true"':'')+' style="display:block;width:100%;text-align:left;cursor:pointer;font:inherit;color:inherit'+(off?';opacity:.6':'')+(i===0?';border:2px solid var(--accent,#1E5B47)':'')+'"><span style="display:flex;align-items:center;justify-content:space-between;gap:12px"><span><b>WEEKLINE PRO '+p[1]+'</b>'+(i===0?' <span class="pill good">Best value</span>':'')+'<br><span class="xs muted">'+p[2]+'</span></span><b class="num" style="font-size:18px">'+esc(pr||'…')+'</b></span></button>';}).join('');
+    if(!PRO.prices.yearly&&!PRO.prices.monthly&&!PRO.prices.lifetime)h+='<p class="xs muted" style="text-align:center">'+(PRO.state==='fail'?'Could not reach the store. Check your connection and open this page again.':'Loading prices…')+'</p>';
   }
+  h+='<div class="row" style="justify-content:center;gap:8px;margin:6px 0"><button class="btn" data-act="prorestore">Restore purchase</button>'+(PRO.store.manage&&pro?'<button class="btn" data-act="promanage">Manage subscription</button>':'')+'</div>';
+  h+='<p class="xs muted" style="text-align:center">'+(PRO.platform==='ios'?'Monthly and yearly PRO are auto-renewing subscriptions. Payment is charged to your Apple Account when you confirm the purchase. A subscription renews automatically for the same period and price unless cancelled at least 24 hours before the end of the current period, and renewal is charged within 24 hours before the period ends. Manage or cancel in Settings › Apple Account › Subscriptions after purchase. Lifetime PRO is a one-time payment.':'Monthly and yearly PRO are auto-renewing subscriptions charged to your Google Play account. They renew automatically at the same price unless cancelled before the period ends. Cancel any time in Google Play › Payments & subscriptions › Subscriptions. Lifetime PRO is a one-time payment.')+' <a href="privacy.html">Privacy policy</a>'+(PRO.terms?' · <a href="'+PRO.terms+'" target="_blank" rel="noopener">Terms of Use (EULA)</a>':'')+'</p>';
   return h;
 }
 function vMeeting(){
@@ -1010,7 +1016,7 @@ var GCAL='Google Calendar';
 S.gcal={};S.gcalState='idle';S.gcalLoaded={};
 function gIso(ds,min){return ds+'T'+m2t(min)+':00+09:00';}
 function parseGTime(v){if(!v)return null;var s=typeof v==='string'?v:(v.dateTime||v.date||'');if(!s)return null;
-  if(/^\d{4}-\d{2}-\d{2}$/.test(s))return {ds:s,min:0,allDay:true};var d=new Date(s);if(isNaN(d))return null;var k=new Date(d.getTime()+9*3600e3);return {ds:ymd(k),min:k.getUTCHours()*60+k.getUTCMinutes(),allDay:false};}
+  if(/^\d{4}-\d{2}-\d{2}$/.test(s))return {ds:s,min:0,allDay:true};var d=new Date(s);if(isNaN(d))return null;var k=localWall(d.getTime());return {ds:ymd(k),min:k.getUTCHours()*60+k.getUTCMinutes(),allDay:false};}
 function gcalRange(fromDs,toDs){
   var key=fromDs+'_'+toDs;if(S.gcalLoaded[key]||!S.mcp)return;S.gcalLoaded[key]=true;S.gcalState='loading';
   S.mcp.callTool(GCAL,'list_events',{startTime:gIso(fromDs,0),endTime:gIso(toDs,0),orderBy:'startTime',pageSize:250,timeZone:'Asia/Seoul'},{cache:{staleTime:60000}}).then(function(r){
@@ -1204,8 +1210,8 @@ function overlapOf(ds,s,e,skipIdx){var d=S.days[ds];var hits=(d&&d.blocks||[]).f
 function repeatDates(ds,rep,count){var out=[ds];if(!rep||rep==='none')return out;var n=Math.min(52,Math.max(1,count||8));
   for(var i=1;i<n;i++){var d=parseYmd(ds);if(rep==='weekly')d=addDays(d,7*i);else if(rep==='biweekly')d=addDays(d,14*i);else{var y=d.getUTCFullYear(),mo=d.getUTCMonth()+i,last=new Date(Date.UTC(y,mo+1,0)).getUTCDate();d=new Date(Date.UTC(y,mo,Math.min(d.getUTCDate(),last)));}out.push(ymd(d));}return out;}
 
-var VIEWS={goals:vGoals,trips:vTrips,calendar:vCalendar,week:vWeek,today:vToday,review:vReview,cascade:vCascade,plan:vPlan,report:vReport,retro:vRetro,meeting:function(){return proOk()?vMeeting():vProLock();}};
-var TAB_OF={report:'week',retro:'week',review:'goals',insights:'goals',cascade:'goals',plan:'goals',trips:'calendar'};
+var VIEWS={goals:vGoals,trips:vTrips,calendar:vCalendar,week:vWeek,today:vToday,review:vReview,cascade:vCascade,plan:vPlan,report:vReport,retro:vRetro,meeting:function(){return proOk()?vMeeting():vPro();},pro:vPro};
+var TAB_OF={pro:'meeting',report:'week',retro:'week',review:'goals',insights:'goals',cascade:'goals',plan:'goals',trips:'calendar'};
 VIEWS.today=(function(f){return function(){return f()+memoCard('day');};})(VIEWS.today);
 VIEWS.week=(function(f){return function(){return f()+memoCard('week');};})(VIEWS.week);
 function route(){var h=(location.hash||'').replace('#','');return VIEWS[h]?h:'goals';}
@@ -1233,6 +1239,7 @@ document.addEventListener('click',function(e){
   if(plAct(a,b))return;
   if(a==='probuy'){if(PRO.store)PRO.store.buy(b.dataset.v);return;}
   if(a==='prorestore'){if(PRO.store)PRO.store.restore();return;}
+  if(a==='promanage'){if(PRO.store&&PRO.store.manage)PRO.store.manage();return;}
   if(a==='newWeek'){ensureWeek(cw);render();}
   else if(a==='rock'){var w=weekDoc(cw.id),k=w.roles[+b.dataset.r].rocks[+b.dataset.k];k.done=!k.done;writeWeek(cw.id);render();}
   else if(a==='newDay'){var ds=b.dataset.date;S.days[ds]=Object.assign({_id:ds},dayTemplate(ds));writeDay(ds);render();}
@@ -1336,18 +1343,25 @@ function notifRow(){
   if(Notification.permission==='denied')return '<span class="xs muted">Device alerts are blocked. Allow them in your browser settings to get meeting alerts.</span>';
   return '<button class="btn" data-act="wlnotif">Turn on meeting alerts</button>';
 }
+function isApp(){var C=window.Capacitor;return !!(C&&C.isNativePlatform&&C.isNativePlatform());}
+function lastBackup(){return +proLS('wl_last_backup')||0;}
+/* reminder on the Goals page: no backup for 30+ days (counted from first use when there is none) */
+function backupNag(){var l=lastBackup(),since=l||proStart();if(Date.now()-since<30*864e5)return '';
+  return '<div class="card" role="status" style="border:2px solid var(--warn,#B4691F);gap:8px"><p class="small" style="margin:0">'+(l?'Your last backup is more than 30 days old. Deleting the app or switching devices erases all records. Save a backup now.':'You have no backup yet. Deleting the app or switching devices erases all records. Save a backup.')+'</p><button class="btn primary" data-act="wlbackup">Back up now</button></div>';}
 function backupCard(){
+  var lb=lastBackup();
   return '<section class="card" style="gap:10px"><span class="label">Records on this device</span>'+
-    '<p class="small muted" style="margin:0">Your records are saved only in this device’s browser, not on a server. Download a backup before switching devices or clearing browser data.</p>'+
-    '<div class="grid2"><button class="btn" data-act="wlbackup">Download backup</button><button class="btn" data-act="wlrestore">Restore from backup</button></div>'+
+    '<p class="small muted" style="margin:0">'+(isApp()?'Your records are saved only on this device, not on a server. Save a backup before switching devices or deleting the app.':'Your records are saved only in this device’s browser, not on a server. Download a backup before switching devices or clearing browser data.')+'</p>'+
+    '<p class="xs muted" style="margin:0">'+(lb?'Last backup: {d}'.replace('{d}',ymd(localWall(lb))):'No backup yet')+'</p>'+
+    (PRO.store?'<div class="row" style="gap:8px"><button class="btn" data-act="prorestore">Restore PRO purchase</button><a class="xs" href="#pro" style="color:var(--accent)">WEEKLINE PRO</a></div>':'')+'<div class="grid2"><button class="btn" data-act="wlbackup">Download backup</button><button class="btn" data-act="wlrestore">Restore from backup</button></div>'+
     notifRow()+'<div class="row" style="gap:16px"><a class="xs muted" href="privacy.html">Privacy policy</a><a class="xs muted" href="../" data-lang="ko" lang="ko">한국어</a></div></section>';
 }
-VIEWS.goals=(function(f){return function(){return f()+backupCard();};})(VIEWS.goals);
+VIEWS.goals=(function(f){return function(){var out=f(),n=backupNag(),i=out.indexOf('</h1>');if(n&&i>=0){i+=5;if(out.substr(i,14)==='<p class="sub"')i=out.indexOf('</p>',i)+4;out=out.slice(0,i)+n+out.slice(i);}return out+backupCard();};})(VIEWS.goals);
 function wlBackup(){
   var data={};wlKeys().forEach(function(k){try{data[k.slice(WL.P.length)]=JSON.parse(localStorage.getItem(k));}catch(e){}});
   var blob=new Blob([JSON.stringify({app:'WEEKLINE',version:1,exported:new Date().toISOString(),data:data})],{type:'application/json'});
   var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='weekline-backup-'+todayStr()+'.json';document.body.appendChild(a);a.click();
-  setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},1000);toast('Backup saved');
+  proLS('wl_last_backup',String(Date.now()));setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},1000);toast('Backup saved');
 }
 function wlRestore(){
   var inp=document.createElement('input');inp.type='file';inp.accept='application/json,.json';
