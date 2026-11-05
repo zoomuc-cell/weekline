@@ -1,0 +1,73 @@
+# Codemagic: build the WEEKLINE iPhone app (Capacitor, app/) and upload it to TestFlight.
+# Setup steps (Korean, step by step): app/README.md › "Codemagic으로 TestFlight 올리기".
+#
+# Needs in Codemagic:
+#   - App Store Connect API key added under Integrations › Developer Portal, named exactly: weekline-asc
+#   - Environment variable group "weekline_signing" with CERTIFICATE_PRIVATE_KEY (secret)
+#   - (optional) APP_STORE_APPLE_ID in the same group: the app's Apple ID number from App Store Connect
+workflows:
+  ios-testflight:
+    name: WEEKLINE iOS → TestFlight
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    integrations:
+      app_store_connect: weekline-asc
+    environment:
+      groups:
+        - weekline_signing
+      vars:
+        BUNDLE_ID: com.auratechnologies.weekline
+        XCODE_PROJECT: app/ios/App/App.xcodeproj
+        XCODE_SCHEME: App
+      node: 22
+      xcode: latest # App Store Connect only accepts builds made with the iOS 26 SDK (Xcode 26) or later
+    triggering:
+      events:
+        - tag # push a tag such as ios-1.1.0 to build; or press "Start new build"
+      tag_patterns:
+        - pattern: 'ios-*'
+    scripts:
+      - name: Check the SDK is new enough for App Store Connect
+        script: |
+          xcodebuild -version
+          V=$(xcrun --sdk iphoneos --show-sdk-version | cut -d. -f1)
+          if [ "$V" -lt 26 ]; then echo "iOS SDK $V is too old: App Store Connect needs the iOS 26 SDK (Xcode 26)"; exit 1; fi
+      - name: Install packages
+        script: cd app && npm ci
+      - name: Build the app's web files from the published PWA
+        script: cd app && python3 build_www.py
+      - name: Copy web files and plugins into the iOS project
+        script: cd app && npx cap sync ios
+      - name: Signing certificate and App Store profile (created on Apple's side when missing)
+        script: |
+          keychain initialize
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --certificate-key=@env:CERTIFICATE_PRIVATE_KEY \
+            --create
+          keychain add-certificates
+          xcode-project use-profiles
+      - name: Build number (always higher than the last TestFlight build)
+        script: |
+          # Codemagic's own build counter, kept above the GitHub Actions run numbers (also used for TestFlight)
+          N=$((BUILD_NUMBER + 100))
+          if [ -n "$APP_STORE_APPLE_ID" ]; then
+            LAST=$(app-store-connect get-latest-testflight-build-number "$APP_STORE_APPLE_ID" 2>/dev/null || echo 0)
+            case "$LAST" in ''|*[!0-9]*) LAST=0;; esac
+            if [ $((LAST + 1)) -gt "$N" ]; then N=$((LAST + 1)); fi
+          fi
+          echo "Build number $N"
+          sed -i '' "s/CURRENT_PROJECT_VERSION = [0-9]*;/CURRENT_PROJECT_VERSION = $N;/" "$XCODE_PROJECT/project.pbxproj"
+          grep -m1 "CURRENT_PROJECT_VERSION" "$XCODE_PROJECT/project.pbxproj"
+      - name: Build the .ipa
+        script: |
+          xcode-project build-ipa \
+            --project "$XCODE_PROJECT" \
+            --scheme "$XCODE_SCHEME"
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
