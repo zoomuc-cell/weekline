@@ -119,7 +119,7 @@ Actions › 최근 *Android app* 실행 › Artifacts 의 `WEEKLINE-android-debu
 4. **API 키 만들기**: App Store Connect › 사용자 및 액세스 › **통합** › App Store Connect API › **팀 키** › **+** › 이름 `Codemagic`, 액세스 **관리자(Admin)** › 생성.
    **발급자 ID(Issuer ID)** 와 **키 ID** 를 적고, **API 키 다운로드**로 `.p8` 파일을 받습니다. 한 번만 받을 수 있으니 잘 보관하세요.
 5. **Codemagic에 API 키 연결**: Codemagic 왼쪽 **Settings** › **Integrations** › **Developer Portal** › **Connect**(또는 Manage keys › Add key)
-   - App Store Connect API key name: **`weekline-asc`** (이 이름 그대로)
+   - 키를 추가하면 Codemagic이 키 ID(지금은 **`N8CMWWQ693`**)를 이름으로 씁니다. `codemagic.yaml` 의 `app_store_connect:` 값이 이 이름과 같아야 합니다 (키를 새로 만들면 둘 다 바꾸기)
    - Issuer ID, Key ID 입력, `.p8` 파일 올리기 › Save
 6. **인증서용 개인 키 만들기**: 윈도우 **PowerShell** 을 열고 아래 한 줄을 실행합니다.
    ```
