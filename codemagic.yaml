@@ -2,7 +2,7 @@
 # Setup steps (Korean, step by step): app/README.md › "Codemagic으로 TestFlight 올리기".
 #
 # Needs in Codemagic:
-#   - App Store Connect API key added under Integrations › Developer Portal, named exactly: weekline-asc
+#   - App Store Connect API key added under Integrations › Developer Portal, shown as N8CMWWQ693 (its Key ID)
 #   - Environment variable group "weekline_signing" with CERTIFICATE_PRIVATE_KEY (secret)
 #   - (optional) APP_STORE_APPLE_ID in the same group: the app's Apple ID number from App Store Connect
 workflows:
@@ -11,7 +11,7 @@ workflows:
     instance_type: mac_mini_m2
     max_build_duration: 60
     integrations:
-      app_store_connect: weekline-asc
+      app_store_connect: N8CMWWQ693 # integration name = the API key ID shown in Codemagic
     environment:
       groups:
         - weekline_signing
