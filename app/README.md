@@ -106,6 +106,41 @@ Actions › 최근 *Android app* 실행 › Artifacts 의 `WEEKLINE-android-debu
 무료 Apple ID 서명은 **7일마다 만료**됩니다 — 같은 PC에서 Sideloadly 로 다시 설치하면 기록은 그대로 남습니다
 (Sideloadly 의 자동 갱신을 켜 두면 같은 와이파이에서 알아서 연장). 만료 걱정 없이 쓰려면 아래 TestFlight 로 넘어가세요.
 
+## Codemagic으로 TestFlight 올리기 (맥 없이, 클릭으로)
+
+저장소 루트의 `codemagic.yaml` 이 설정 파일입니다 (워크플로 이름 **WEEKLINE iOS → TestFlight**). GitHub Actions 방법(아래 절)과 둘 중 편한 쪽을 쓰면 됩니다.
+
+**준비 (한 번만)**
+
+1. **Apple Developer Program 가입** (developer.apple.com, 연 US$99).
+2. **번들 ID 등록**: developer.apple.com › Certificates, Identifiers & Profiles › Identifiers › **+** › App IDs › App › 설명 `WEEKLINE`, Bundle ID(Explicit) `com.auratechnologies.weekline` › **In-App Purchase** 체크 확인 › 등록.
+3. **App Store Connect에 앱 만들기**: 앱 › **+** › 신규 앱 › 플랫폼 iOS, 이름 WEEKLINE, 기본 언어 한국어, 번들 ID는 방금 만든 것, SKU `weekline`.
+   만든 뒤 **앱 정보** 화면의 **Apple ID**(10자리 정도 숫자)를 적어 둡니다.
+4. **API 키 만들기**: App Store Connect › 사용자 및 액세스 › **통합** › App Store Connect API › **팀 키** › **+** › 이름 `Codemagic`, 액세스 **관리자(Admin)** › 생성.
+   **발급자 ID(Issuer ID)** 와 **키 ID** 를 적고, **API 키 다운로드**로 `.p8` 파일을 받습니다. 한 번만 받을 수 있으니 잘 보관하세요.
+5. **Codemagic에 API 키 연결**: Codemagic 왼쪽 **Settings** › **Integrations** › **Developer Portal** › **Connect**(또는 Manage keys › Add key)
+   - App Store Connect API key name: **`weekline-asc`** (이 이름 그대로)
+   - Issuer ID, Key ID 입력, `.p8` 파일 올리기 › Save
+6. **인증서용 개인 키 만들기**: 윈도우 **PowerShell** 을 열고 아래 한 줄을 실행합니다.
+   ```
+   ssh-keygen -t rsa -b 2048 -m PEM -f weekline_cert_key -q -N '""'
+   ```
+   생긴 `weekline_cert_key` 파일(확장자 없음)을 메모장으로 열어 **전체**(-----BEGIN 부터 END----- 까지)를 복사합니다. 이 파일은 저장소에 올리지 말고 따로 보관합니다.
+7. **Codemagic 환경 변수**: Applications › weekline › **Environment variables**
+   - Variable name `CERTIFICATE_PRIVATE_KEY`, Value는 6번에서 복사한 내용, Group `weekline_signing`, **Secret** 체크 › Add
+   - (권장) Variable name `APP_STORE_APPLE_ID`, Value는 3번의 Apple ID 숫자, Group `weekline_signing` › Add
+
+**빌드할 때마다**
+
+8. weekline 화면 오른쪽 위 **Check for configuration files** 를 눌러 `codemagic.yaml` 이 보이면 **Start new build** › 브랜치 `main`, 워크플로 **WEEKLINE iOS → TestFlight** › Start.
+   GitHub에서 `ios-1.1.0` 처럼 `ios-` 로 시작하는 태그를 만들어도 자동으로 시작합니다.
+9. 20~30분 뒤 빌드가 초록색이 되면 App Store Connect › TestFlight 에 새 빌드가 나타납니다 (Apple 처리에 10~30분 더 걸림).
+   수출 규정(암호화) 질문은 Info.plist 에 미리 답해 두어서 따로 묻지 않습니다.
+
+- 인증서와 배포용 프로비저닝 프로파일은 첫 빌드 때 Codemagic이 Apple 쪽에 **자동으로 만들고**, 다음부터는 같은 것을 씁니다 (6번 키를 바꾸지 않는 한).
+- 빌드 번호는 매번 자동으로 올라갑니다 (TestFlight 최신 번호 + 1 이상). 버전(1.1.0)은 Xcode 프로젝트의 `MARKETING_VERSION` 입니다.
+- 실패하면 빌드 화면에서 빨간 단계의 로그를 그대로 보내 주세요.
+
 ## App Store / TestFlight 올리기 (대표님이 할 일)
 
 1. **Apple Developer Program 가입** — developer.apple.com, 연 US$99 (약 13만 원). 개인 또는 사업자(D-U-N-S 번호 필요).
