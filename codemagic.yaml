@@ -40,11 +40,32 @@ workflows:
         script: cd app && npx cap sync ios
       - name: Signing certificate and App Store profile (created on Apple's side when missing)
         script: |
+          set -e
           keychain initialize
+          if [ -z "${CERTIFICATE_PRIVATE_KEY:-}" ]; then
+            echo "CERTIFICATE_PRIVATE_KEY가 없습니다. Codemagic 앱 화면 > Environment variables 에 그룹 weekline_signing 으로 넣어 주세요 (app/README.md 참고)."
+            exit 1
+          fi
+          # Windows 줄바꿈, 헤더 없는 본문 등 붙여넣기 형식이 달라도 PEM 개인키로 정리한다 (ci/normalize_cert_key.py)
+          KEY_FILE="$CM_BUILD_DIR/cert_key"
+          python3 ci/normalize_cert_key.py "$KEY_FILE"
+          if grep -q "BEGIN OPENSSH PRIVATE KEY" "$KEY_FILE"; then
+            echo "OpenSSH 형식 키를 PEM 형식으로 변환합니다."
+            ssh-keygen -p -N "" -m PEM -f "$KEY_FILE" >/dev/null
+          fi
+          if ! openssl pkey -in "$KEY_FILE" -noout 2>/dev/null; then
+            # 헤더 없이 본문만 들어온 경우 PKCS#8 로 한 번 더 시도
+            sed -i.bak 's/RSA PRIVATE KEY/PRIVATE KEY/' "$KEY_FILE" && rm -f "$KEY_FILE.bak"
+            if ! openssl pkey -in "$KEY_FILE" -noout 2>/dev/null; then
+              echo "CERTIFICATE_PRIVATE_KEY 값을 개인키로 읽을 수 없습니다. 일부만 복사되었을 수 있어요. cert_key 파일 내용 전체를 다시 넣어 주세요."
+              exit 1
+            fi
+          fi
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
-            --certificate-key=@env:CERTIFICATE_PRIVATE_KEY \
+            --certificate-key "@file:$KEY_FILE" \
             --create
+          rm -f "$KEY_FILE"
           keychain add-certificates
           xcode-project use-profiles
       - name: Build number (always higher than the last TestFlight build)
