@@ -128,6 +128,7 @@ Actions › 최근 *Android app* 실행 › Artifacts 의 `WEEKLINE-android-debu
    생긴 `weekline_cert_key` 파일(확장자 없음)을 메모장으로 열어 **전체**(-----BEGIN 부터 END----- 까지)를 복사합니다. 이 파일은 저장소에 올리지 말고 따로 보관합니다.
 7. **Codemagic 환경 변수**: Applications › weekline › **Environment variables**
    - Variable name `CERTIFICATE_PRIVATE_KEY`, Value는 6번에서 복사한 내용, Group `weekline_signing`, **Secret** 체크 › Add
+     (nowhere와 같은 키를 써도 됩니다. Windows 줄바꿈이나 BEGIN/END 줄이 빠진 값도 빌드 때 `ci/normalize_cert_key.py`가 자동으로 정리합니다.)
    - (권장) Variable name `APP_STORE_APPLE_ID`, Value는 3번의 Apple ID 숫자, Group `weekline_signing` › Add
 
 **빌드할 때마다**
