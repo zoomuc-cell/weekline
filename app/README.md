@@ -79,8 +79,19 @@ Actions › 최근 *Android app* 실행 › Artifacts 의 `WEEKLINE-android-debu
    - 비소모성 `weekline_pro_lifetime`(39,900원)
 5. 개인정보 처리방침 URL: https://zoomuc-cell.github.io/weekline/privacy.html · 이용약관: Apple 표준 EULA (결제 화면에 링크됨)
 6. 앱 개인정보 라벨: "수집하는 데이터 없음" (결제는 Apple 처리).
-7. GitHub Secrets 4개(위 TestFlight 절) 등록 → Actions › iOS app › Run workflow(testflight) → TestFlight에서 Sandbox 계정으로 구매 확인 → 심사 제출.
-8. 심사 메모: "로그인 없음. PRO(미팅) 기능은 설치 후 14일 무료 체험으로 모두 열려 있음. 알림·공유 시트 등 기기 기능 사용."
+7. GitHub Secrets 4개(아래 TestFlight 절) 등록 → Actions › iOS app › Run workflow(testflight) → TestFlight에서 Sandbox 계정으로 구매 확인 → 심사 제출.
+8. 심사 메모(App Review Information › Notes)에 그대로 붙여 넣기:
+   > No sign-in. The meeting planner (PRO) is open for a 14-day free trial from first launch. To see the in-app purchases at any time, open the Meetings tab (+ button) and tap "PRO 무료 체험 … · PRO 보기" ("See PRO" in English) under the title: it lists the monthly and yearly auto-renewing subscriptions and the lifetime purchase, with Restore Purchases, the Privacy Policy and Apple's standard Terms of Use (EULA). The app uses local notifications for meeting alerts and the share sheet for backups.
+9. 구독 그룹 현지화(표시 이름)·각 상품의 **심사용 스크린숏**(결제 화면 캡처)·설명을 채워야 상품이 "제출 준비 완료"가 됩니다. **첫 버전은 인앱 구입을 앱 버전과 함께 제출**해야 합니다 (앱 버전 페이지 › 인앱 구입 및 구독에서 세 상품 선택).
+10. 스크린숏은 **아이폰 6.9형(1320×2868 또는 1290×2796)** 한 세트면 됩니다. 이 앱은 **아이폰 전용**이라 아이패드 스크린숏은 필요 없습니다.
+
+### 결제 화면이 지키는 App Store 규칙 (3.1.1 · 3.1.2)
+- 체험 중에도 미팅 화면의 **PRO 보기** 링크로 구매·**구매 복원**·(구매 후) **구독 관리**를 언제든 열 수 있음 — 심사관이 인앱 구입을 찾지 못하면 반려됩니다.
+- 가격은 **App Store가 알려 준 현지 통화 가격만** 표시. 가격을 못 받으면 버튼을 잠그고 안내 문구를 띄움 (임의 가격·할인율 표시 없음).
+- 상품마다 이름·기간(1개월/1년/평생)·가격, 자동 갱신 조건(24시간 전 해지, Apple 계정 청구, 설정에서 관리) 고지. 아이폰 화면에는 Google Play를 언급하지 않음.
+- 개인정보처리방침·이용약관(EULA)은 웹 주소로 링크되어 사파리에서 열림 (앱 안 파일은 새 창으로 열 수 없음).
+- `PrivacyInfo.xcprivacy`: 추적 없음·수집 데이터 없음. 앱 개인정보 라벨도 "데이터 수집 안 함"으로 맞춥니다.
+- TestFlight 빌드는 Xcode 26(iOS 26 SDK)으로 만듭니다 — 2026년 4월부터 App Store Connect가 그보다 오래된 SDK 빌드를 받지 않습니다. 워크플로가 SDK 버전을 확인하고 낮으면 멈춥니다.
 
 ## 지금 바로 내 아이폰에 설치 (개발자 가입 없이)
 

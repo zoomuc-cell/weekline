@@ -14,7 +14,7 @@ window.Capacitor={isNativePlatform:()=>true,getPlatform:()=>window.__plat||'ios'
   checkExactNotificationSetting:async()=>({exact_alarm:__exact}),changeExactNotificationSetting:async()=>{rec('exact');__exact='granted';return {exact_alarm:'granted'};}},
  Filesystem:{writeFile:async(a)=>{rec('write',a);return {uri:'file:///cache/'+a.path};}},
  Share:{share:async(a)=>{rec('share',a);return {};}},
- NativePurchases:{__owned:[],getPurchases:async()=>({purchases:window.Capacitor.Plugins.NativePurchases.__owned}),restorePurchases:async()=>{rec('restore');},
+ NativePurchases:{__owned:[],manageSubscriptions:async()=>{rec('manage');},getPurchases:async()=>({purchases:window.Capacitor.Plugins.NativePurchases.__owned}),restorePurchases:async()=>{rec('restore');},
   getProducts:async(o)=>{rec('products',o);return {products:o.productType==='subs'?(window.__plat==='android'?[{identifier:'monthly',priceString:'₩2,900',offerToken:'tm'},{identifier:'yearly',priceString:'₩19,900',offerToken:'ty'}]:[{identifier:'weekline_pro_monthly',priceString:'₩2,900'},{identifier:'weekline_pro_yearly',priceString:'₩19,900'}]):[{identifier:'weekline_pro_lifetime',priceString:'₩39,900'}]};},
   purchaseProduct:async(o)=>{rec('buy',o);window.Capacitor.Plugins.NativePurchases.__owned=[{productIdentifier:o.productIdentifier,purchaseState:'1',isActive:true}];return {transactionId:'t1'};}}}};`;
 (async()=>{
@@ -88,6 +88,52 @@ window.Capacitor={isNativePlatform:()=>true,getPlatform:()=>window.__plat||'ios'
     await ctx.close();
   }
   {
+    // App Review: during the free trial PRO (buy · restore) is one tap from the meeting page
+    const ctx=await b.newContext({locale:'ko-KR',viewport:{width:390,height:844}});
+    await ctx.addInitScript("window.__plat='ios';window.__perm='granted';"+MOCK);
+    const p=await ctx.newPage();const errs=[];p.on('pageerror',e=>errs.push(e.message));await p.route(/fonts\./,r=>r.abort());
+    await p.goto('http://localhost:8772/#meeting');await p.waitForTimeout(900);
+    ok(!!(await p.$('[data-act="mscope"]'))&&!!(await p.$('a[href="#pro"]')),'ios trial: planner open and PRO link shown');
+    await p.click('a[href="#pro"]');await p.waitForTimeout(400);
+    const plans=await p.$$eval('[data-act="probuy"]:not([disabled])',x=>x.map(e=>e.dataset.v));
+    ok(JSON.stringify(plans)==='["yearly","monthly","lifetime"]'&&!!(await p.$('[data-act="prorestore"]')),'ios trial: PRO page offers all plans and restore '+JSON.stringify(plans));
+    const txt=await p.textContent('#app');
+    ok(!/Google/.test(txt)&&/Apple 계정/.test(txt)&&/24시간/.test(txt),'ios: renewal terms mention Apple only');
+    ok(!!(await p.$('#app a[href="privacy.html"]:not([target])'))&&!!(await p.$('a[href*="apple.com/legal"][target="_blank"]')),'ios: privacy policy opens on the same screen, EULA in the browser');
+    await p.screenshot({path:__dirname+'/pro-trial.png'});
+    await p.click('#app a[href="privacy.html"]');await p.waitForTimeout(400);
+    ok(p.url().endsWith('/privacy.html')&&!/베타/.test(await p.textContent('body'))&&/앱을 닫아도/.test(await p.textContent('body')),'ios: privacy policy opens in the app, no beta label, alerts described as they work');
+    await p.click('a[href="index.html"]');await p.waitForTimeout(700);await p.evaluate(()=>{location.hash='pro';});await p.waitForTimeout(300);
+    await p.click('[data-act="prorestore"]');await p.waitForTimeout(300);
+    ok(await p.evaluate(()=>__calls.some(c=>c[0]==='restore')),'ios trial: restore asks the store');
+    await p.click('[data-act="probuy"][data-v="monthly"]');await p.waitForTimeout(500);
+    ok((await p.textContent('#app')).includes('PRO를 사용 중')&&!!(await p.$('[data-act="promanage"]'))&&!(await p.$('[data-act="probuy"]')),'ios: after purchase the PRO page offers subscription management');
+    ok(errs.length===0,'ios trial: no page errors '+errs.join(' | '));
+    await ctx.close();
+  }
+  {
+    // no store prices (offline / products not set up): no made-up price, buttons stay off
+    const ctx=await b.newContext({locale:'en-US',viewport:{width:390,height:844}});
+    await ctx.addInitScript("window.__plat='ios';window.__perm='granted';"+OLD+MOCK+"window.Capacitor.Plugins.NativePurchases.getProducts=async()=>{throw new Error('offline');};");
+    const p=await ctx.newPage();await p.route(/fonts\./,r=>r.abort());await p.goto('http://localhost:8772/en/index.html#meeting');await p.waitForTimeout(900);
+    const off=await p.$$eval('[data-act="probuy"]',x=>x.map(e=>e.disabled));
+    ok(off.length===3&&off.every(Boolean)&&!/₩/.test(await p.textContent('#app'))&&/Could not reach the store/.test(await p.textContent('#app')),'no store prices: buttons disabled, no hard-coded price, message shown');
+    await ctx.close();
+  }
+  {
+    // backup reminder: 30+ days without a backup → banner on the Goals page; a backup clears it and shows the date
+    const ctx=await b.newContext({locale:'ko-KR',viewport:{width:390,height:844}});
+    await ctx.addInitScript("window.__plat='ios';window.__perm='granted';if(!sessionStorage.getItem('x')){sessionStorage.setItem('x','1');localStorage.setItem('wl_pro_start',String(Date.now()-40*864e5));}"+MOCK);
+    const p=await ctx.newPage();await p.route(/fonts\./,r=>r.abort());await p.goto('http://localhost:8772/#goals');await p.waitForTimeout(900);
+    let t=await p.textContent('#app');
+    ok(/아직 백업이 없습니다/.test(t)&&/이 기기에만 저장/.test(t)&&!/브라우저에만/.test(t)&&/아직 백업한 적이 없습니다/.test(t),'goals: no backup in 30+ days → reminder; the app says "this device"');
+    ok(!!(await p.$('#app [data-act="prorestore"]')),'goals: restore PRO purchase on the records card');
+    await p.click('.card[role="status"] [data-act="wlbackup"]');await p.waitForTimeout(500);
+    t=await p.textContent('#app');
+    ok(!/아직 백업이 없습니다/.test(t)&&/마지막 백업: \d{4}-\d{2}-\d{2}/.test(t),'goals: after a backup the reminder goes and the date shows');
+    await ctx.close();
+  }
+  {
     // a bought PRO survives a fresh start (store purchase list), and a refunded one is withdrawn
     const ctx=await b.newContext({locale:'ko-KR',viewport:{width:390,height:844}});
     await ctx.addInitScript(OLD+"localStorage.setItem('wl_pro','1');"+MOCK);
@@ -101,7 +147,7 @@ window.Capacitor={isNativePlatform:()=>true,getPlatform:()=>window.__plat||'ios'
     const p=await ctx.newPage();await p.route(/fonts\./,r=>r.abort());await p.goto('http://localhost:8772/#meeting');await p.waitForTimeout(700);
     ok((await p.textContent('#app')).includes('PRO 무료 체험 14일 남음')&&!!(await p.$('[data-act="mscope"]')),'browser: planner open during the trial with days left');
     await p.evaluate(()=>{localStorage.setItem('wl_pro_start',String(Date.now()-15*864e5));location.hash='today';});await p.waitForTimeout(200);await p.evaluate(()=>{location.hash='meeting';});await p.waitForTimeout(400);
-    ok(!(await p.$('[data-act="mscope"]'))&&!(await p.$('[data-act="probuy"]'))&&!!(await p.$('a[href*="play.google.com"]')),'browser: after the trial the web points to the app');
+    ok(!(await p.$('[data-act="mscope"]'))&&!(await p.$('[data-act="probuy"]'))&&!!(await p.$('a[href*="play.google.com"]'))&&/웹에는 적용되지 않습니다/.test(await p.textContent('#app')),'browser: after the trial the web says PRO is app-only and points to the app');
     await ctx.close();
   }
   // without the bridge (plain browser) the native block stays out of the way

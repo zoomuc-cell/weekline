@@ -27,7 +27,7 @@ const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)process.exitCode=1;};
     // a beginner gets a long base stage before intensity goes up
     await put('#cgoal',lang==='ko'?'체력 키우기':'Build stamina');await p.click('[data-act="cset"][data-f="type"][data-v="habit"]');await p.click('[data-act="cset"][data-f="start"][data-v="new"]');await p.waitForTimeout(150);
     const plan=await p.textContent('#app');
-    ok(plan.includes(lang==='ko'?'1. 기초 만들기':'1. Build a base')&&plan.includes(lang==='ko'?(new Date().getMonth()+1)+'월':['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][new Date().getMonth()])&&plan.includes(lang==='ko'?'3. 강도 올리기':'3. Raise intensity'),lang+': beginner stage plan starts this month with the base, then adapts and raises intensity');
+    ok(plan.includes(lang==='ko'?'1. 기초 만들기':'1. Build a base')&&plan.includes(lang==='ko'?(new Date().getMonth()+1)+'월':['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][new Date().getMonth()])&&plan.includes(lang==='ko'?'2. 적응':'2. Adapt')&&(new Date().getMonth()>9||plan.includes(lang==='ko'?'3. 강도 올리기':'3. Raise intensity')),lang+': beginner stage plan starts this month with the base, then adapts and raises intensity (stage 3 only when the year has room)');
     await p.click('[data-act="cset"][data-f="start"][data-v="regular"]');await p.waitForTimeout(150);
     ok(!(await p.textContent('#app')).includes(lang==='ko'?'1. 기초 만들기':'1. Build a base'),lang+': a regular skips the base stage');
     // personal conditions reshape the actions: weak knees, 15 minutes a day, 3 days a week
