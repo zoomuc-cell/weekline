@@ -114,24 +114,24 @@ Terms of Use (EULA): https://www.apple.com/legal/internet-services/itunes/dev/st
    - 근거: 모든 기록은 기기 안(localStorage)에만 있고 서버 전송·분석 도구·광고가 없습니다. 결제는 Apple이 처리하므로 개발자가 받는 결제 데이터도 없습니다. `PrivacyInfo.xcprivacy`도 "추적 없음·수집 없음"이라 둘이 일치합니다.
 3. 결과로 스토어에 **"데이터 수집 안 함"** 이 표시됩니다.
 
-## 구독 상품 등록 (가격은 Google Play와 동일)
+## 구독 상품 등록 (가격은 Google Play와 동일 · Apple 가격 목록에 있는 값으로 2026-11-06 조정)
 
 App Store Connect › 앱 › WEEKLINE › **수익화** › **구독** (평생권은 **인앱 구입**). 제품 ID는 앱 코드와 한 글자도 달라서는 안 됩니다.
 
 | 상품 | 유형 | 제품 ID | 기간 | 가격 (대한민국) | Google Play |
 |---|---|---|---|---|---|
-| PRO 월간 | 자동 갱신 구독 | `weekline_pro_monthly` | 1개월 | ₩2,900 | ₩2,900 |
-| PRO 연간 | 자동 갱신 구독 | `weekline_pro_yearly` | 1년 | ₩19,900 | ₩19,900 |
-| PRO 평생 | 비소모성 인앱 구입 | `weekline_pro_lifetime` | — | ₩39,900 | ₩39,900 |
+| PRO 월간 | 자동 갱신 구독 | `weekline_pro_monthly` | 1개월 | ₩3,300 | ₩3,300 |
+| PRO 연간 | 자동 갱신 구독 | `weekline_pro_yearly` | 1년 | ₩19,000 | ₩19,000 |
+| PRO 평생 | 비소모성 인앱 구입 | `weekline_pro_lifetime` | — | ₩39,000 | ₩39,000 |
 
 순서:
 1. **구독** › 구독 그룹 **+** › 참조 이름 `WEEKLINE PRO`.
 2. 그룹 안에서 **+** 로 월간·연간을 하나씩 만듭니다 (참조 이름 `PRO Monthly` / `PRO Yearly`, 제품 ID는 위 표).
    - **구독 기간**: 1개월 / 1년.
-   - **구독 가격** › 가격 추가 › 국가 **대한민국**, 가격 ₩2,900 / ₩19,900 선택 → 다른 나라는 Apple이 환율로 자동 맞춤 (그대로 다음).
+   - **구독 가격** › 가격 추가 › 국가 **대한민국**, 가격 ₩3,300 / ₩19,000 선택 → 다른 나라는 Apple이 환율로 자동 맞춤 (그대로 다음).
    - **App Store 현지화**(한국어): 표시 이름 `PRO 월간` / `PRO 연간`, 설명 `미팅 잡기·재배치·출장 준비` · (영어) `PRO Monthly` / `PRO Yearly`, `Meetings, rescheduling and trip prep`.
    - **심사 정보**: 스크린샷 = TestFlight 앱에서 PRO 화면(미팅 탭 › PRO 보기)을 캡처한 것, 메모는 비워 둬도 됩니다.
    - **무료 체험(신규 가입 혜택)은 넣지 않습니다** — 14일 체험은 앱이 직접 주므로, 넣으면 체험이 이중이 됩니다.
 3. 그룹 화면의 **App Store 현지화**에 그룹 표시 이름 `WEEKLINE PRO` (한국어·영어 모두) 입력.
-4. **인앱 구입** › **+** › 유형 **비소모성** › 참조 이름 `PRO Lifetime`, 제품 ID `weekline_pro_lifetime` › 가격 ₩39,900 › 현지화 `PRO 평생` / `PRO Lifetime` › 심사 스크린샷 동일.
+4. **인앱 구입** › **+** › 유형 **비소모성** › 참조 이름 `PRO Lifetime`, 제품 ID `weekline_pro_lifetime` › 가격 ₩39,000 › 현지화 `PRO 평생` / `PRO Lifetime` › 심사 스크린샷 동일.
 5. 각 상품 상태가 **제출 준비 완료**가 되면, 앱 버전 1.1.0 화면 › **인앱 구입 및 구독** 에서 세 상품을 선택해 **앱과 함께 심사 제출**합니다 (첫 출시는 함께 내야 합니다).

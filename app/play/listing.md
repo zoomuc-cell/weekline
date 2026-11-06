@@ -39,7 +39,7 @@ WEEKLINE은 한 해·분기 목표를 월, 주, 오늘의 일정으로 나눠 �
 
 ■ PRO (미팅)
 · 미팅 잡기·재배치·출장 준비는 PRO 기능입니다. 설치 후 14일 동안 무료로 모두 써 보세요.
-· 월 2,900원 · 연 19,900원 · 평생 39,900원
+· 월 3,300원 · 연 19,000원 · 평생 39,000원
 
 ## English (en-US)
 
@@ -70,7 +70,7 @@ WEEKLINE breaks yearly and quarterly goals down into months, weeks and today.
 
 ■ PRO (meetings)
 · Booking, rescheduling and trip prep are PRO features — free for the first 14 days.
-· ₩2,900 a month · ₩19,900 a year · ₩39,900 lifetime
+· ₩3,300 a month · ₩19,000 a year · ₩39,000 lifetime
 
 ## 데이터 보안 (Data safety) 답변
 
