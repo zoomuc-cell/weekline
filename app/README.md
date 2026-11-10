@@ -56,9 +56,9 @@ npx cap sync
 
 | 상품 | 가격 | Google Play | App Store |
 |---|---|---|---|
-| 월간 | 2,900원 | 구독 `weekline_pro` · 기본 요금제 `monthly` (1개월 자동 갱신) | `weekline_pro_monthly` |
-| 연간 | 19,900원 | 구독 `weekline_pro` · 기본 요금제 `yearly` (1년 자동 갱신) | `weekline_pro_yearly` |
-| 평생 | 39,900원 (출시 첫 달 29,900원 이벤트 선택) | 일회성 제품 `weekline_pro_lifetime` | `weekline_pro_lifetime` (비소모성) |
+| 월간 | 3,300원 | 구독 `weekline_pro` · 기본 요금제 `monthly` (1개월 자동 갱신) | `weekline_pro_monthly` |
+| 연간 | 19,000원 | 구독 `weekline_pro` · 기본 요금제 `yearly` (1년 자동 갱신) | `weekline_pro_yearly` |
+| 평생 | 39,000원 | 일회성 제품 `weekline_pro_lifetime` | `weekline_pro_lifetime` (비소모성) |
 
 Play Console 순서: 결제 프로필(판매자 계정) → 결제 기능이 든 새 빌드를 테스트 트랙에 업로드 → 수익 창출 › 제품 › 구독 / 일회성 제품에서 위 ID로 만들고 활성화 → 라이선스 테스트에 본인 Gmail 추가(테스트 결제는 청구되지 않음).
 심사용 '앱 액세스' 안내: "로그인 없음. PRO 기능은 설치 후 14일 동안 무료 체험으로 모두 열려 있습니다."
@@ -75,8 +75,8 @@ Actions › 최근 *Android app* 실행 › Artifacts 의 `WEEKLINE-android-debu
 2. App Store Connect › 계약/세금/금융 — **유료 앱 계약** 동의, 은행·세금 정보 입력 (인앱 결제를 팔려면 필수).
 3. 앱 만들기: 번들 ID `com.auratechnologies.weekline`, 이름 WEEKLINE.
 4. 인앱 구입 만들기 (ID는 앱 코드와 정확히 같아야 함)
-   - 구독 그룹 `WEEKLINE PRO`: 자동 갱신 구독 `weekline_pro_monthly`(2,900원) · `weekline_pro_yearly`(19,900원)
-   - 비소모성 `weekline_pro_lifetime`(39,900원)
+   - 구독 그룹 `WEEKLINE PRO`: 자동 갱신 구독 `weekline_pro_monthly`(3,300원) · `weekline_pro_yearly`(19,000원)
+   - 비소모성 `weekline_pro_lifetime`(39,000원)
 5. 개인정보 처리방침 URL: https://zoomuc-cell.github.io/weekline/privacy.html · 이용약관: Apple 표준 EULA (결제 화면에 링크됨)
 6. 앱 개인정보 라벨: "수집하는 데이터 없음" (결제는 Apple 처리).
 7. GitHub Secrets 4개(아래 TestFlight 절) 등록 → Actions › iOS app › Run workflow(testflight) → TestFlight에서 Sandbox 계정으로 구매 확인 → 심사 제출.

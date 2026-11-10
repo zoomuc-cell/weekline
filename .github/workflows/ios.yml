@@ -69,7 +69,7 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: app/package-lock.json
-      - run: npm ci && python3 build_www.py && npx cap sync ios
+      - run: npm ci && python3 build_www.py ios && npx cap sync ios
       - name: Build for iPhone (Release, unsigned)
         run: |
           xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release \
@@ -120,7 +120,7 @@ jobs:
         run: |
           V=$(xcrun --sdk iphoneos --show-sdk-version | cut -d. -f1)
           if [ "$V" -lt 26 ]; then echo "::error::iOS SDK $V is too old: App Store Connect only accepts builds made with the iOS 26 SDK (Xcode 26) or later"; exit 1; fi
-      - run: npm ci && python3 build_www.py && npx cap sync ios
+      - run: npm ci && python3 build_www.py ios && npx cap sync ios
       - name: Archive and upload (Xcode cloud signing with an App Store Connect API key)
         run: |
           echo "$ASC_KEY_P8" > "$RUNNER_TEMP/asc.p8"
