@@ -7,6 +7,27 @@ Same app, plus what only a native app can do on a phone:
 """
 import pathlib, shutil, sys
 
+# `python3 build_www.py ios` builds the iPhone app, which is listed on the App Store as
+# "Agenda to Action" (the name WEEKLINE is taken there). Android and the web stay WEEKLINE.
+IOS = 'ios' in sys.argv[1:]
+IOS_NAME = 'Agenda to Action'      # name shown inside the app
+IOS_HOME = 'AgendaAction'          # home-screen name (CFBundleDisplayName), used in Settings paths
+# kept as-is: backup files say app:'WEEKLINE' so they stay readable on every platform
+KEEP = ["app:'WEEKLINE'", "j.app!=='WEEKLINE'"]
+
+
+def rename(s):
+    if not IOS:
+        return s
+    s = s.replace('Settings › WEEKLINE', 'Settings › ' + IOS_HOME).replace('설정 › WEEKLINE', '설정 › ' + IOS_HOME)
+    s = s.replace("<b>WEEKLINE PRO '", "<b>PRO '")
+    for i, k in enumerate(KEEP):
+        s = s.replace(k, f'@@KEEP{i}@@')
+    s = s.replace('WEEKLINE', IOS_NAME)
+    for i, k in enumerate(KEEP):
+        s = s.replace(f'@@KEEP{i}@@', k)
+    return s
+
 HERE = pathlib.Path(__file__).parent
 DIST = HERE.parent  # the published PWA at the repo root
 WWW = HERE / 'www'
@@ -128,6 +149,7 @@ def patch(src, out, links):
         rep(old, new)
     rep('</style>', CSS)
     rep(INIT, NATIVE + INIT)
+    s = rename(s)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(s, encoding='utf-8')
 
@@ -141,7 +163,7 @@ patch(DIST / 'en' / 'index.html', WWW / 'en' / 'index.html', [('href="../"', 'hr
 for f in ['privacy.html', 'en/privacy.html']:
     t = (DIST / f).read_text(encoding='utf-8')
     assert t.count('href="./"') == 1, f
-    (WWW / f).write_text(t.replace('href="./"', 'href="index.html"'), encoding='utf-8')
+    (WWW / f).write_text(rename(t.replace('href="./"', 'href="index.html"')), encoding='utf-8')
 for f in ['icon-192.png', 'apple-touch-icon.png']:
     shutil.copy(DIST / f, WWW / f)
 for p in sorted(WWW.rglob('*')):

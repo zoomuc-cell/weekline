@@ -1,6 +1,8 @@
-# App Store 등록정보 (WEEKLINE)
+# App Store 등록정보 (아이폰: Agenda to Action)
 
-App Store Connect › 앱 › WEEKLINE › **배포** 탭 › iOS 앱 버전 1.1.0 화면에 붙여 넣습니다.
+> 2026-11-10: App Store에 다른 개발자의 "Weekline Weekly Planner & Todo"가 있어 4.3(a)로 거절되어, 아이폰판 스토어 이름을 **Agenda to Action**으로 바꿨습니다. 홈 화면 이름은 `AgendaAction`, 앱 안 표시 이름은 `Agenda to Action`입니다 (`build_www.py ios`). 안드로이드·웹은 WEEKLINE 그대로입니다.
+
+App Store Connect › 앱 › (기존 WEEKLINE 앱) › **배포** 탭 › iOS 앱 버전 1.1.0 화면에 붙여 넣습니다.
 글자 수 제한은 Apple 기준입니다. 가격은 설명에 적지 않습니다 (App Store가 나라별 가격을 따로 보여 주므로).
 
 ## 스크린샷 (아이폰 6.9형, 1290×2796)
@@ -16,7 +18,7 @@ App Store Connect › 앱 › WEEKLINE › **배포** 탭 › iOS 앱 버전 1.1
 ## 한국어 (기본 언어)
 
 **이름 (30자)**
-WEEKLINE 위클라인
+Agenda to Action: 목표·미팅 플래너
 
 **부제 (30자)**
 목표를 이번 주와 오늘 할 일로
@@ -28,7 +30,7 @@ WEEKLINE 위클라인
 플래너,주간계획,목표관리,일정,할일,다이어리,시간관리,투두,캘린더,미팅,습관,업무,주간보고,OKR,생산성
 
 **설명 (4000자)**
-WEEKLINE은 한 해·분기 목표를 월, 주, 오늘의 일정으로 나눠 주는 플래너입니다.
+Agenda to Action은 한 해·분기 목표를 월, 주, 오늘의 일정으로 나눠 주는 플래너입니다.
 
 ■ 목표에서 오늘까지 한 줄로
 · 개인·회사 목표를 적으면 월·주·오늘 단위로 쪼개고 진행률을 %로 보여 줍니다.
@@ -46,7 +48,7 @@ WEEKLINE은 한 해·분기 목표를 월, 주, 오늘의 일정으로 나눠 �
 ■ 보기 편하게
 · 글자 크기 조절, 다크 모드, 한국어·영어.
 
-■ WEEKLINE PRO
+■ PRO
 · 미팅 잡기·재배치·출장 준비는 PRO 기능입니다. 설치 후 14일 동안 무료로 모두 써 보세요.
 · PRO 월간·연간(자동 갱신 구독)과 평생 이용권(1회 구매)이 있습니다.
 · 구독은 구매 확정 시 Apple 계정으로 청구되며, 현재 기간이 끝나기 24시간 전까지 해지하지 않으면 자동으로 갱신됩니다. 구독 관리와 해지는 설정 › Apple 계정 › 구독에서 할 수 있습니다.
@@ -57,7 +59,7 @@ WEEKLINE은 한 해·분기 목표를 월, 주, 오늘의 일정으로 나눠 �
 ## English (en-US) 현지화
 
 **Name (30)**
-WEEKLINE - Goals & Week Plan
+Agenda to Action: Goal Planner
 
 **Subtitle (30)**
 Goals into this week and today
@@ -69,10 +71,10 @@ Turn this year's goals into this week's big rocks and today's time blocks. No si
 planner,weekly,goals,schedule,todo,calendar,time blocking,meeting,habit,OKR,productivity,agenda
 
 **Description**
-WEEKLINE breaks yearly and quarterly goals down into months, weeks and today.
+Agenda to Action breaks yearly and quarterly goals down into months, weeks and today.
 
 ■ From goals to today, on one line
-· Write personal and work goals; WEEKLINE splits them by month, week and day and shows progress as a %.
+· Write personal and work goals; Agenda to Action splits them by month, week and day and shows progress as a %.
 · Pick three "big rocks" each week first, then fill the rest of your time.
 
 ■ Your day and your meetings
@@ -87,7 +89,7 @@ WEEKLINE breaks yearly and quarterly goals down into months, weeks and today.
 ■ Easy to read
 · Adjustable text size, dark mode, Korean and English.
 
-■ WEEKLINE PRO
+■ PRO
 · Booking, rescheduling and trip prep are PRO features — free for the first 14 days.
 · PRO Monthly and Yearly (auto-renewing subscriptions) and a one-time Lifetime purchase.
 · Payment is charged to your Apple Account at confirmation of purchase. Subscriptions renew automatically unless cancelled at least 24 hours before the end of the current period. Manage or cancel in Settings › Apple Account › Subscriptions.
@@ -116,7 +118,7 @@ Terms of Use (EULA): https://www.apple.com/legal/internet-services/itunes/dev/st
 
 ## 구독 상품 등록 (가격은 Google Play와 동일 · Apple 가격 목록에 있는 값으로 2026-11-06 조정)
 
-App Store Connect › 앱 › WEEKLINE › **수익화** › **구독** (평생권은 **인앱 구입**). 제품 ID는 앱 코드와 한 글자도 달라서는 안 됩니다.
+App Store Connect › 앱 › (기존 WEEKLINE 앱) › **수익화** › **구독** (평생권은 **인앱 구입**). 제품 ID는 앱 코드와 한 글자도 달라서는 안 됩니다.
 
 | 상품 | 유형 | 제품 ID | 기간 | 가격 (대한민국) | Google Play |
 |---|---|---|---|---|---|

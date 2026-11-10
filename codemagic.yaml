@@ -35,7 +35,7 @@ workflows:
       - name: Install packages
         script: cd app && npm ci
       - name: Build the app's web files from the published PWA
-        script: cd app && python3 build_www.py
+        script: cd app && python3 build_www.py ios
       - name: Copy web files and plugins into the iOS project
         script: cd app && npx cap sync ios
       - name: Signing certificate and App Store profile (created on Apple's side when missing)
