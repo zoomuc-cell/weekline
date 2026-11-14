@@ -13,13 +13,13 @@ Play Console › 성장 › 스토어 등록정보 에 붙여 넣습니다. 그�
 ## 한국어 (ko-KR)
 
 **앱 이름 (30자)**
-WEEKLINE 위클라인 - 목표·일정 플래너
+Agenda to Action: 목표·미팅 플래너
 
 **간단한 설명 (80자)**
 올해 목표를 이번 주와 오늘 할 일로. 큰 돌부터 채우는 주간 플래너
 
 **자세한 설명 (4000자)**
-WEEKLINE은 한 해·분기 목표를 월, 주, 오늘의 일정으로 나눠 주는 플래너입니다.
+Agenda to Action은 한 해·분기 목표를 월, 주, 오늘의 일정으로 나눠 주는 플래너입니다.
 
 ■ 목표에서 오늘까지 한 줄로
 · 개인·회사 목표를 적으면 월·주·오늘 단위로 쪼개고 진행률을 %로 보여 줍니다.
@@ -44,16 +44,16 @@ WEEKLINE은 한 해·분기 목표를 월, 주, 오늘의 일정으로 나눠 �
 ## English (en-US)
 
 **App name**
-WEEKLINE - Goals & Week Planner
+Agenda to Action: Goal Planner
 
 **Short description**
 Turn this year's goals into this week's big rocks and today's plan.
 
 **Full description**
-WEEKLINE breaks yearly and quarterly goals down into months, weeks and today.
+Agenda to Action breaks yearly and quarterly goals down into months, weeks and today.
 
 ■ From goals to today, on one line
-· Write personal and work goals; WEEKLINE splits them by month, week and day and shows progress as a %.
+· Write personal and work goals; Agenda to Action splits them by month, week and day and shows progress as a %.
 · Pick three "big rocks" each week first, then fill the rest of your time.
 
 ■ Your day and your meetings
@@ -87,6 +87,6 @@ WEEKLINE breaks yearly and quarterly goals down into months, weeks and today.
 
 - 핵심 기능 분류: **캘린더 / 일정 알림** (알람 시계 앱 아님)
 - 사용 이유 (한국어):
-  > WEEKLINE은 사용자가 직접 잡은 미팅·출장의 준비 시각과 출발 시각을 정해진 분에 알려 주는 일정 플래너입니다. 알림이 몇 분 늦으면 출발 시각을 놓치게 되므로 정확한 알람이 필요합니다. 알람은 사용자가 등록한 일정에만, 다가오는 최대 60건까지만 예약하며, 사용자가 앱 안의 '정시 알림 허용' 버튼을 눌러 '알람 및 리마인더' 권한을 직접 켰을 때만 정시로 동작합니다. 허용하지 않으면 일반 알림으로 몇 분 늦게 전달됩니다.
+  > Agenda to Action은 사용자가 직접 잡은 미팅·출장의 준비 시각과 출발 시각을 정해진 분에 알려 주는 일정 플래너입니다. 알림이 몇 분 늦으면 출발 시각을 놓치게 되므로 정확한 알람이 필요합니다. 알람은 사용자가 등록한 일정에만, 다가오는 최대 60건까지만 예약하며, 사용자가 앱 안의 '정시 알림 허용' 버튼을 눌러 '알람 및 리마인더' 권한을 직접 켰을 때만 정시로 동작합니다. 허용하지 않으면 일반 알림으로 몇 분 늦게 전달됩니다.
 - Reason (English):
-  > WEEKLINE is a schedule planner that alerts users at the exact minute to prepare for and leave for meetings and trips they have booked themselves. An alert that arrives minutes late can make the user miss the departure time, so exact alarms are required. Alarms are set only for the user's own upcoming events (at most 60 at a time), and run exactly on time only after the user turns on "Alarms & reminders" through the in-app "Allow on-time alerts" button; otherwise they are delivered as regular, possibly delayed notifications.
+  > Agenda to Action is a schedule planner that alerts users at the exact minute to prepare for and leave for meetings and trips they have booked themselves. An alert that arrives minutes late can make the user miss the departure time, so exact alarms are required. Alarms are set only for the user's own upcoming events (at most 60 at a time), and run exactly on time only after the user turns on "Alarms & reminders" through the in-app "Allow on-time alerts" button; otherwise they are delivered as regular, possibly delayed notifications.

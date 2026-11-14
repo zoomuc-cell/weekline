@@ -7,18 +7,19 @@ Same app, plus what only a native app can do on a phone:
 """
 import pathlib, shutil, sys
 
-# `python3 build_www.py ios` builds the iPhone app, which is listed on the App Store as
-# "Agenda to Action" (the name WEEKLINE is taken there). Android and the web stay WEEKLINE.
+# Both native apps (iPhone and Android) are listed as "Agenda to Action" (the name WEEKLINE
+# is taken on the App Store). Only the published web PWA at the repo root keeps WEEKLINE.
+# `python3 build_www.py ios` builds the iPhone app; no argument builds the Android app.
 IOS = 'ios' in sys.argv[1:]
-IOS_NAME = 'Agenda to Action'      # name shown inside the app
-IOS_HOME = 'AgendaAction'          # home-screen name (CFBundleDisplayName), used in Settings paths
+IOS_NAME = 'Agenda to Action'      # name shown inside the app (both platforms)
+# home-screen name, used in Settings paths: iPhone CFBundleDisplayName is AgendaAction,
+# Android launcher label (strings.xml app_name) is the full name
+IOS_HOME = 'AgendaAction' if IOS else IOS_NAME
 # kept as-is: backup files say app:'WEEKLINE' so they stay readable on every platform
 KEEP = ["app:'WEEKLINE'", "j.app!=='WEEKLINE'"]
 
 
 def rename(s):
-    if not IOS:
-        return s
     s = s.replace('Settings › WEEKLINE', 'Settings › ' + IOS_HOME).replace('설정 › WEEKLINE', '설정 › ' + IOS_HOME)
     s = s.replace("<b>WEEKLINE PRO '", "<b>PRO '")
     for i, k in enumerate(KEEP):

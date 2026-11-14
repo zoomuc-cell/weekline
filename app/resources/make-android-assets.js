@@ -37,8 +37,8 @@ const DENS = { mdpi: 1, hdpi: 1.5, xhdpi: 2, xxhdpi: 3, xxxhdpi: 4 };
   await shot(512, 512, svg, path.join(PLAY, 'icon-512.png'));
   await shot(1024, 500, `<div style="width:100%;height:100%;background:#1E5B47;display:flex;align-items:center;gap:56px;padding:0 90px;box-sizing:border-box;font-family:'Noto Sans KR','Apple SD Gothic Neo',sans-serif;color:#F5F3EC">
       <div style="width:240px;height:240px;flex:none;border-radius:54px;overflow:hidden;box-shadow:0 0 0 6px #A9C9B8">${svg}</div>
-      <div><div style="font-size:84px;font-weight:800;letter-spacing:2px">WEEKLINE</div>
-      <div style="font-size:38px;margin-top:14px;opacity:.9">한 주를 한 줄로 · 큰 돌부터</div></div></div>`, path.join(PLAY, 'feature-1024x500.png'));
+      <div><div style="font-size:52px;font-weight:800;letter-spacing:1px;white-space:nowrap">Agenda to Action</div>
+      <div style="font-size:34px;margin-top:14px;opacity:.9;white-space:nowrap">한 주를 한 줄로 · 큰 돌부터</div></div></div>`, path.join(PLAY, 'feature-1024x500.png'));
   const www = path.join(__dirname, '..', 'www');
   if (fs.existsSync(path.join(www, 'index.html'))) {
     for (const [lang, file] of [['ko', 'index.html'], ['en', 'en/index.html']]) {

@@ -1,6 +1,6 @@
 # App Store 등록정보 (아이폰: Agenda to Action)
 
-> 2026-11-10: App Store에 다른 개발자의 "Weekline Weekly Planner & Todo"가 있어 4.3(a)로 거절되어, 아이폰판 스토어 이름을 **Agenda to Action**으로 바꿨습니다. 홈 화면 이름은 `AgendaAction`, 앱 안 표시 이름은 `Agenda to Action`입니다 (`build_www.py ios`). 안드로이드·웹은 WEEKLINE 그대로입니다.
+> 2026-11-10: App Store에 다른 개발자의 "Weekline Weekly Planner & Todo"가 있어 4.3(a)로 거절되어, 아이폰판 스토어 이름을 **Agenda to Action**으로 바꿨습니다. 홈 화면 이름은 `AgendaAction`, 앱 안 표시 이름은 `Agenda to Action`입니다 (`build_www.py ios`). 2026-11-14부터 안드로이드(Google Play)도 같은 이름으로 맞췄습니다. 웹(PWA)만 WEEKLINE 그대로입니다.
 
 App Store Connect › 앱 › (기존 WEEKLINE 앱) › **배포** 탭 › iOS 앱 버전 1.1.0 화면에 붙여 넣습니다.
 글자 수 제한은 Apple 기준입니다. 가격은 설명에 적지 않습니다 (App Store가 나라별 가격을 따로 보여 주므로).
