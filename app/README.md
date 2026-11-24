@@ -29,7 +29,7 @@
 ```sh
 cd app
 npm ci
-python3 build_www.py
+python3 build_www.py android   # 안드로이드 (앱 이름 Agenda to Action), 아이폰은 ios
 npx cap sync
 ```
 

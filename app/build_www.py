@@ -7,11 +7,12 @@ Same app, plus what only a native app can do on a phone:
 """
 import pathlib, shutil, sys
 
-# `python3 build_www.py ios` builds the iPhone app, which is listed on the App Store as
-# "Agenda to Action" (the name WEEKLINE is taken there). Android and the web stay WEEKLINE.
-IOS = 'ios' in sys.argv[1:]
+# `python3 build_www.py ios` / `python3 build_www.py android` build the phone apps, which are listed
+# on the App Store and Google Play as "Agenda to Action" (the name WEEKLINE is taken on the App Store,
+# and Android follows so both stores match). The web PWA at the repo root stays WEEKLINE.
+IOS = bool({'ios', 'android'} & set(sys.argv[1:]))   # True = rename to Agenda to Action
 IOS_NAME = 'Agenda to Action'      # name shown inside the app
-IOS_HOME = 'AgendaAction'          # home-screen name (CFBundleDisplayName), used in Settings paths
+IOS_HOME = 'AgendaAction'          # home-screen / launcher name, used in Settings paths
 # kept as-is: backup files say app:'WEEKLINE' so they stay readable on every platform
 KEEP = ["app:'WEEKLINE'", "j.app!=='WEEKLINE'"]
 
@@ -20,6 +21,7 @@ def rename(s):
     if not IOS:
         return s
     s = s.replace('Settings › WEEKLINE', 'Settings › ' + IOS_HOME).replace('설정 › WEEKLINE', '설정 › ' + IOS_HOME)
+    s = s.replace('Apps › WEEKLINE', 'Apps › ' + IOS_HOME).replace('애플리케이션 › WEEKLINE', '애플리케이션 › ' + IOS_HOME)
     s = s.replace("<b>WEEKLINE PRO '", "<b>PRO '")
     for i, k in enumerate(KEEP):
         s = s.replace(k, f'@@KEEP{i}@@')

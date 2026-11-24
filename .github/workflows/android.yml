@@ -35,7 +35,7 @@ jobs:
           cache: gradle
       - run: npm ci
       - name: Build the app's web files from the published PWA
-        run: python3 build_www.py
+        run: python3 build_www.py android
       - name: Check the native bridge (alerts, backup) in a browser
         run: npm i -g playwright@1 && playwright install chromium && node qa/test_native.js && node qa/test_plan.js
       - run: npx cap sync android
